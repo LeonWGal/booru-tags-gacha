@@ -1,0 +1,29 @@
+=== GIT STATUS BEFORE === 
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   git_log.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+=== GIT ADD === 
+warning: in the working copy of 'git_log.txt', LF will be replaced by CRLF the next time Git touches it
+=== GIT COMMIT === 
+Author identity unknown
+
+*** Please tell me who you are.
+
+Run
+
+  git config --global user.email "you@example.com"
+  git config --global user.name "Your Name"
+
+to set your account's default identity.
+Omit --global to set the identity only in this repository.
+
+fatal: unable to auto-detect email address (got 'User@LWG-01.(none)')
+=== GIT PUSH === 
+Everything up-to-date
+=== ALL DONE === 

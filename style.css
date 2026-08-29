@@ -1,0 +1,553 @@
+/* ==========================================================================
+   Booru Tags Gacha - Adaptive Modern UI
+   Supports: Vanilla Gradio / Forge Neo (Native Solid Mode)
+             & Lobe Theme Neo (Glassmorphism & Ant Design Tokens Mode)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. BASE / NATIVE GRADIO LAYER (Default: Solid, High-Contrast, Zero Glass)
+   -------------------------------------------------------------------------- */
+
+.booru-gacha-container {
+    border-radius: var(--container-radius, var(--radius-md, 8px));
+    margin-bottom: 8px;
+    transition: border-color 0.15s ease;
+}
+
+/* Status & HUD Bar - Native Solid */
+.gacha-status-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: var(--panel-background-fill, var(--background-fill-secondary, #20242c));
+    border: 1px solid var(--border-color-primary, #3b4252);
+    border-radius: var(--radius-sm, 6px);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* Rarity Badges - Native Solid */
+.gacha-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: #ffffff !important;
+    text-transform: uppercase;
+}
+
+.gacha-badge-ur {
+    background: #c026d3 !important; /* Fuchsia */
+    border: 1px solid #e879f9;
+}
+
+.gacha-badge-ssr {
+    background: #d97706 !important; /* Amber */
+    border: 1px solid #fcd34d;
+    color: #ffffff !important;
+}
+
+.gacha-badge-sr {
+    background: #2563eb !important; /* Royal Blue */
+    border: 1px solid #93c5fd;
+}
+
+.gacha-badge-r {
+    background: #059669 !important; /* Emerald */
+    border: 1px solid #6ee7b7;
+}
+
+.gacha-badge-n {
+    background: #4b5563 !important; /* Gray */
+    border: 1px solid #9ca3af;
+}
+
+/* Rating Pill */
+.gacha-rating-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #ffffff !important;
+}
+
+.gacha-rating-safe {
+    background: #15803d !important; /* Green */
+}
+
+.gacha-rating-sensitive {
+    background: #b45309 !important; /* Amber */
+}
+
+.gacha-rating-questionable {
+    background: #c2410c !important; /* Orange */
+}
+
+.gacha-rating-explicit {
+    background: #b91c1c !important; /* Red */
+}
+
+/* Score, Dimension & Meta Pills */
+.gacha-meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--input-background-fill, rgba(128, 128, 128, 0.12));
+    color: var(--body-text-color, inherit) !important;
+    padding: 3px 9px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid var(--border-color-primary, rgba(128, 128, 128, 0.25));
+}
+
+/* Post Link */
+.gacha-post-link {
+    color: var(--link-text-color, #38bdf8) !important;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none !important;
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.gacha-post-link:hover {
+    text-decoration: underline !important;
+}
+
+/* Multi-Roll Stats Summary Banner */
+.gacha-stats-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 6px 12px;
+    margin: 4px 0 8px 0;
+    background: var(--input-background-fill, rgba(128, 128, 128, 0.08));
+    border: 1px solid var(--border-color-primary, rgba(128, 128, 128, 0.2));
+    border-radius: var(--radius-sm, 6px);
+    font-size: 12px;
+}
+
+.gacha-stats-count-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   2. CATEGORIZED TAG CHIPS INSPECTOR
+   -------------------------------------------------------------------------- */
+
+.gacha-tag-chips-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: var(--input-background-fill, rgba(128, 128, 128, 0.06));
+    border: 1px solid var(--border-color-primary, rgba(128, 128, 128, 0.2));
+    border-radius: var(--radius-sm, 6px);
+}
+
+.gacha-tag-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.gacha-tag-group-label {
+    min-width: 90px;
+    font-weight: 700;
+    color: var(--body-text-color-sub, #94a3b8);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding-top: 2px;
+}
+
+.gacha-tag-group-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 1;
+}
+
+.gacha-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    line-height: 1.3;
+    user-select: all;
+    border: 1px solid transparent;
+}
+
+.gacha-chip-artist {
+    background: #4c1d95;
+    color: #e9d5ff !important;
+    border-color: #7c3aed;
+}
+
+.gacha-chip-character {
+    background: #1e3a8a;
+    color: #bfdbfe !important;
+    border-color: #3b82f6;
+}
+
+.gacha-chip-copyright {
+    background: #064e3b;
+    color: #a7f3d0 !important;
+    border-color: #10b981;
+}
+
+.gacha-chip-general {
+    background: #374151;
+    color: #f3f4f6 !important;
+    border-color: #4b5563;
+}
+
+.gacha-chip-meta {
+    background: #78350f;
+    color: #fde68a !important;
+    border-color: #f59e0b;
+}
+
+/* --------------------------------------------------------------------------
+   3. GACHA PULL BUTTONS (Native Solid Accents)
+   -------------------------------------------------------------------------- */
+
+.gacha-pull-btn {
+    font-weight: 700 !important;
+    border-radius: var(--radius-sm, 6px) !important;
+    transition: transform 0.1s ease, filter 0.15s ease !important;
+    cursor: pointer !important;
+}
+
+.gacha-pull-btn:active {
+    transform: scale(0.98) !important;
+}
+
+.gacha-pull-btn-1x {
+    background: #1e40af !important; /* Blue */
+    color: #ffffff !important;
+    border: 1px solid #3b82f6 !important;
+}
+.gacha-pull-btn-1x:hover {
+    filter: brightness(1.15) !important;
+}
+
+.gacha-pull-btn-5x {
+    background: #6b21a8 !important; /* Purple */
+    color: #ffffff !important;
+    border: 1px solid #9333ea !important;
+}
+.gacha-pull-btn-5x:hover {
+    filter: brightness(1.15) !important;
+}
+
+.gacha-pull-btn-10x {
+    background: #b45309 !important; /* Amber / SSR */
+    color: #ffffff !important;
+    border: 1px solid #f59e0b !important;
+}
+.gacha-pull-btn-10x:hover {
+    filter: brightness(1.15) !important;
+}
+
+.gacha-pull-btn-cancel {
+    background: #991b1b !important; /* Red */
+    color: #ffffff !important;
+    border: 1px solid #ef4444 !important;
+}
+.gacha-pull-btn-cancel:hover {
+    filter: brightness(1.15) !important;
+}
+
+/* Action Buttons */
+.gacha-action-btn {
+    font-weight: 600 !important;
+    border-radius: var(--radius-sm, 6px) !important;
+    transition: all 0.15s ease !important;
+}
+
+.gacha-action-btn:active {
+    transform: scale(0.98) !important;
+}
+
+.gacha-fav-btn {
+    color: #f59e0b !important;
+}
+
+/* Preview Image & Gallery Box */
+.gacha-preview-image,
+#booru_gacha_gallery {
+    border-radius: var(--radius-sm, 6px) !important;
+    background: var(--input-background-fill, rgba(128, 128, 128, 0.05)) !important;
+    border: 1px solid var(--border-color-primary, rgba(128, 128, 128, 0.2)) !important;
+    overflow: hidden !important;
+}
+
+.gacha-preview-image img,
+#booru_gacha_gallery img {
+    object-fit: contain !important;
+    max-height: 100% !important;
+}
+
+#booru_gacha_gallery .thumbnail-item,
+#booru_gacha_gallery .gallery-item,
+#booru_gacha_gallery button {
+    border-radius: var(--radius-sm, 6px) !important;
+    border: 1px solid var(--border-color-primary, rgba(128, 128, 128, 0.2)) !important;
+    transition: transform 0.15s ease, border-color 0.15s ease !important;
+}
+
+#booru_gacha_gallery .thumbnail-item:hover,
+#booru_gacha_gallery .gallery-item:hover,
+#booru_gacha_gallery button:hover {
+    transform: translateY(-2px) !important;
+    border-color: #6366f1 !important;
+}
+
+#booru_gacha_gallery .selected,
+#booru_gacha_gallery button.selected {
+    border: 2px solid #6366f1 !important;
+}
+
+#booru_gacha_gallery .caption-label,
+#booru_gacha_gallery .caption {
+    background: rgba(0, 0, 0, 0.8) !important;
+    color: #ffffff !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 3px 6px !important;
+    text-align: center !important;
+}
+
+
+/* --------------------------------------------------------------------------
+   4. LOBE THEME NEO SPECIFIC LAYER (Activated ONLY when Lobe Theme is active)
+   -------------------------------------------------------------------------- */
+
+.booru-gacha-container.is-lobe-theme,
+[data-theme] .booru-gacha-container,
+:root:has([class*="lobe-"]) .booru-gacha-container,
+body:has(#lobe-header) .booru-gacha-container {
+    border-radius: var(--radius, 12px);
+}
+
+.booru-gacha-container.is-lobe-theme .gacha-status-bar,
+[data-theme] .booru-gacha-container .gacha-status-bar,
+:root:has([class*="lobe-"]) .booru-gacha-container .gacha-status-bar,
+body:has(#lobe-header) .booru-gacha-container .gacha-status-bar {
+    background: var(--color-bg-container, var(--panel-background-fill, rgba(128, 128, 128, 0.08))) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border: 1px solid var(--color-border, var(--border-color-primary, rgba(128, 128, 128, 0.2))) !important;
+    border-radius: var(--radius, 8px) !important;
+}
+
+/* Holographic Shimmer on UR / SSR in Lobe Theme */
+@keyframes gacha-holo-shimmer {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.booru-gacha-container.is-lobe-theme .gacha-badge-ur,
+[data-theme] .booru-gacha-container .gacha-badge-ur,
+:root:has([class*="lobe-"]) .booru-gacha-container .gacha-badge-ur,
+body:has(#lobe-header) .booru-gacha-container .gacha-badge-ur {
+    background: linear-gradient(135deg, #ec4899, #8b5cf6, #3b82f6) !important;
+    background-size: 200% 200% !important;
+    animation: gacha-holo-shimmer 3s ease infinite !important;
+    box-shadow: 0 0 12px rgba(236, 72, 153, 0.4) !important;
+    border: none !important;
+}
+
+.booru-gacha-container.is-lobe-theme .gacha-badge-ssr,
+[data-theme] .booru-gacha-container .gacha-badge-ssr,
+:root:has([class*="lobe-"]) .booru-gacha-container .gacha-badge-ssr,
+body:has(#lobe-header) .booru-gacha-container .gacha-badge-ssr {
+    background: linear-gradient(135deg, #f59e0b, #eab308) !important;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.4) !important;
+    border: none !important;
+}
+
+.booru-gacha-container.is-lobe-theme .gacha-badge-sr,
+[data-theme] .booru-gacha-container .gacha-badge-sr,
+:root:has([class*="lobe-"]) .booru-gacha-container .gacha-badge-sr,
+body:has(#lobe-header) .booru-gacha-container .gacha-badge-sr {
+    background: linear-gradient(135deg, #3b82f6, #06b6d4) !important;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.3) !important;
+    border: none !important;
+}
+
+.booru-gacha-container.is-lobe-theme .gacha-badge-r,
+[data-theme] .booru-gacha-container .gacha-badge-r,
+:root:has([class*="lobe-"]) .booru-gacha-container .gacha-badge-r,
+body:has(#lobe-header) .booru-gacha-container .gacha-badge-r {
+    background: linear-gradient(135deg, #10b981, #14b8a6) !important;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.3) !important;
+    border: none !important;
+}
+
+.booru-gacha-container.is-lobe-theme .gacha-badge-n,
+[data-theme] .booru-gacha-container .gacha-badge-n,
+:root:has([class*="lobe-"]) .booru-gacha-container .gacha-badge-n,
+body:has(#lobe-header) .booru-gacha-container .gacha-badge-n {
+    background: linear-gradient(135deg, #6b7280, #9ca3af) !important;
+    border: none !important;
+}
+
+/* Lobe Glass Pull Buttons */
+.booru-gacha-container.is-lobe-theme .gacha-pull-btn-1x,
+[data-theme] .booru-gacha-container .gacha-pull-btn-1x,
+:root:has([class*="lobe-"]) .booru-gacha-container .gacha-pull-btn-1x,
+body:has(#lobe-header) .booru-gacha-container .gacha-pull-btn-1x {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(6, 182, 212, 0.22)) !important;
+    border: 1px solid rgba(59, 130, 246, 0.5) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.booru-gacha-container.is-lobe-theme .gacha-pull-btn-5x,
+[data-theme] .booru-gacha-container .gacha-pull-btn-5x,
+:root:has([class*="lobe-"]) .booru-gacha-container .gacha-pull-btn-5x,
+body:has(#lobe-header) .booru-gacha-container .gacha-pull-btn-5x {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.22), rgba(236, 72, 153, 0.22)) !important;
+    border: 1px solid rgba(168, 85, 247, 0.5) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.booru-gacha-container.is-lobe-theme .gacha-pull-btn-10x,
+[data-theme] .booru-gacha-container .gacha-pull-btn-10x,
+:root:has([class*="lobe-"]) .booru-gacha-container .gacha-pull-btn-10x,
+body:has(#lobe-header) .booru-gacha-container .gacha-pull-btn-10x {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(234, 179, 8, 0.25)) !important;
+    border: 1px solid rgba(245, 158, 11, 0.65) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.booru-gacha-container.is-lobe-theme .gacha-pull-btn-cancel,
+[data-theme] .booru-gacha-container .gacha-pull-btn-cancel,
+:root:has([class*="lobe-"]) .booru-gacha-container .gacha-pull-btn-cancel,
+body:has(#lobe-header) .booru-gacha-container .gacha-pull-btn-cancel {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.booru-gacha-container.is-lobe-theme .gacha-tag-chips-wrap,
+[data-theme] .booru-gacha-container .gacha-tag-chips-wrap,
+:root:has([class*="lobe-"]) .booru-gacha-container .gacha-tag-chips-wrap,
+body:has(#lobe-header) .booru-gacha-container .gacha-tag-chips-wrap {
+    background: var(--color-bg-container, rgba(128, 128, 128, 0.05)) !important;
+    backdrop-filter: blur(8px) !important;
+    border: 1px solid var(--color-border, rgba(128, 128, 128, 0.2)) !important;
+    border-radius: var(--radius, 8px) !important;
+}
+
+.booru-gacha-container.is-lobe-theme .gacha-chip-artist,
+[data-theme] .booru-gacha-container .gacha-chip-artist {
+    background: rgba(168, 85, 247, 0.18) !important;
+    color: #c084fc !important;
+    border-color: rgba(168, 85, 247, 0.4) !important;
+}
+
+.booru-gacha-container.is-lobe-theme .gacha-chip-character,
+[data-theme] .booru-gacha-container .gacha-chip-character {
+    background: rgba(59, 130, 246, 0.18) !important;
+    color: #60a5fa !important;
+    border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+.booru-gacha-container.is-lobe-theme .gacha-chip-copyright,
+[data-theme] .booru-gacha-container .gacha-chip-copyright {
+    background: rgba(16, 185, 129, 0.18) !important;
+    color: #34d399 !important;
+    border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+.booru-gacha-container.is-lobe-theme .gacha-chip-general,
+[data-theme] .booru-gacha-container .gacha-chip-general {
+    background: rgba(107, 114, 128, 0.18) !important;
+    color: #e5e7eb !important;
+    border-color: rgba(107, 114, 128, 0.4) !important;
+}
+
+.booru-gacha-container.is-lobe-theme .gacha-chip-meta,
+[data-theme] .booru-gacha-container .gacha-chip-meta {
+    background: rgba(245, 158, 11, 0.18) !important;
+    color: #fbbf24 !important;
+    border-color: rgba(245, 158, 11, 0.4) !important;
+}
+
+
+/* --------------------------------------------------------------------------
+   5. CRITICAL FIX FOR TAILWIND & LOBE THEME SVG / ICON EXPANSION RESETS
+   -------------------------------------------------------------------------- */
+
+.booru-gacha-container .block-label svg,
+.booru-gacha-container .label-wrap svg,
+.booru-gacha-container span.icon svg,
+.booru-gacha-container svg.feather,
+.booru-gacha-container svg.feather-image,
+.booru-gacha-container button svg,
+.booru-gacha-container .icon-buttons svg {
+    width: 14px !important;
+    height: 14px !important;
+    max-width: 14px !important;
+    max-height: 14px !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+}
+
+.booru-gacha-container .block-label span.icon,
+.booru-gacha-container .label-wrap span.icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 14px !important;
+    height: 14px !important;
+    max-width: 14px !important;
+    max-height: 14px !important;
+}
+
+/* Hide empty placeholder overlays when image is present */
+.booru-gacha-container .gacha-preview-image:has(img) svg.empty-icon,
+.booru-gacha-container .gacha-preview-image:has(img) .empty,
+.booru-gacha-container .gacha-preview-image:has(img) .upload-container,
+.booru-gacha-container .gacha-preview-image:has(img) .ant-image-placeholder,
+.booru-gacha-container .gacha-preview-image:has(img) .ant-image-mask,
+.booru-gacha-container .gacha-preview-image .image-container:has(img) > svg,
+.booru-gacha-container .gacha-preview-image .image-container:has(img) .empty,
+.booru-gacha-container .gacha-preview-image .image-container:has(img) .upload-container,
+.booru-gacha-container .gacha-preview-image .image-container:has(img) .ant-image-placeholder,
+.booru-gacha-container #booru_gacha_gallery :has(img) > svg,
+.booru-gacha-container #booru_gacha_gallery :has(img) .empty,
+.booru-gacha-container #booru_gacha_gallery :has(img) .ant-image-placeholder,
+.booru-gacha-container #booru_gacha_gallery .ant-image-placeholder,
+.booru-gacha-container #booru_gacha_gallery .ant-image-mask,
+.booru-gacha-container .ant-image-placeholder {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
