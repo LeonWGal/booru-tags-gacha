@@ -1,200 +1,112 @@
-# 🎲 Booru Tags Gacha 2.0
+# 🎲 Booru Tags Gacha
 
-[![Forge Neo](https://img.shields.io/badge/Платформа-Forge%20Neo%20%7C%20SD--WebUI-blue?style=for-the-badge)](https://github.com/Haoming02/sd-webui-forge-classic)
-[![Gradio 4](https://img.shields.io/badge/Интерфейс-Gradio%204+-orange?style=for-the-badge)](https://gradio.app/)
-[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![License](https://img.shields.io/badge/Лицензия-MIT-green?style=for-the-badge)](./LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-SD--WebUI%20%7C%20Forge%20Neo-blue?style=flat-square)](https://github.com/LeonWGal/booru-tags-gacha)
+[![Gradio](https://img.shields.io/badge/Gradio-4.x%20%2F%205.x-orange?style=flat-square)](https://gradio.app/)
+[![Theme](https://img.shields.io/badge/Theme-Native%20%7C%20Lobe%20Theme-purple?style=flat-square)](https://github.com/LeonWGal/booru-tags-gacha)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](./LICENSE)
 
-Высокопроизводительное расширение нового поколения для рандомизации тегов с Booru-сайтов, гача-роллов и продвинутого промпт-инжиниринга в **Stable Diffusion WebUI** и **Forge Neo** с полной поддержкой **Gradio 4+**.
-
-[🇬🇧 Read documentation in English (README.md)](./README.md)
+Рандомизатор буру-тегов, гача-движок мульти-роллов и инструмент сборки промптов для **Stable Diffusion WebUI** и **Forge Neo** (Gradio 4+).
 
 ---
 
-## 📑 Содержание
-- [Обзор](#-обзор)
-- [Ключевые возможности](#-ключевые-возможности)
-- [Поддерживаемые Booru-движки](#-поддерживаемые-booru-движки)
-- [Синтаксис плейсхолдеров в промптах](#-синтаксис-плейсхолдеров-в-промптах)
-- [Интерфейс и UX](#-интерфейс-и-ux)
-- [Установка](#-установка)
-- [Настройка API](#-настройка-api)
-- [Архитектура проекта](#-архитектура-проекта)
-- [Часто задаваемые вопросы (FAQ)](#-часто-задаваемые-вопросы-faq)
-- [Лицензия](#-лицензия)
+## Содержание
+- [Возможности](#возможности)
+- [Поддерживаемые буру](#поддерживаемые-буру)
+- [Плейсхолдеры промпта](#плейсхолдеры-промпта)
+- [Адаптивный интерфейс и темы](#адаптивный-интерфейс-и-темы)
+- [Установка](#установка)
+- [Настройки и API ключи](#настройки-и-api-ключи)
+- [Лицензия](#лицензия)
 
 ---
 
-## 🌟 Обзор
+## Возможности
 
-**Booru Tags Gacha 2.0** объединяет механику гачи и мощь современных Booru API для удобного создания промптов в Stable Diffusion. Расширение позволяет выбивать случайные визуальные стили художников, концепты персонажей, генерировать теги по категориям или автоматически рандомизировать промпт при каждой генерации.
-
----
-
-## ✨ Ключевые возможности
-
-- **🌐 Модульная архитектура движков**: Нативная поддержка современных JSON и XML API для Danbooru, Gelbooru, Moebooru (Yande.re, Konachan), e621, Philomena (Derpibooru), AIBooru и пользовательских Booru.
-- **🎰 Мульти-роллы Гачи (1x, 5x, 10x)**: Одиночные роллы и мульти-паки (5x Lucky Roll, 10x SSR Pull) с динамическим расчетом раритетности карточек на основе скора и лайков (**UR 💎**, **SSR 🌟**, **SR ✨**, **R 🔷**, **N ⚪**).
-- **🏷️ Разделение тегов по категориям**: Полный контроль включения категорий: `Художник`, `Персонаж`, `Франшиза / Копирайт`, `Общие теги` и `Мета-теги` с помощью мгновенных чекбоксов.
-- **🛡️ Защита смайликов при замене подчеркиваний**: Заменяет `_` на пробелы, сохраняя текстовые смайлики (`^_^`, `>_<`, `o_o`, `0_0`, `=_=`, `@_@`, `u_u`, `x_x`, `3_3`, `6_9`, `>_o` и др.).
-- **🔒 Автоэкранирование скобок `\(` и `\)`**: Предотвращает случайное срабатывание синтаксиса весов WebUI для имен персонажей и тайтлов (например, `rem \(re:zero\)`).
-- **⚡ Плейсхолдеры и Auto-Gacha**: Умная подстановка тегов в промпт через токены (`[gacha]`, `[gacha-wa]`, `[gacha-oa]`, `[gacha-oc]`, `[gacha-gen]`, `[gacha-all]`) и режим непрерывного авто-ролла перед каждой генерацией.
-- **💾 Пресеты и Избранное**: Сохранение понравившихся роллов в `gacha_favorites.json`, именованные поисковые профили и быстрая навигация по истории роллов (`◀ Пред.`, `След. ▶`).
+- **🎰 Мульти-пулл гача (1x, 5x, 10x)**: Одиночные роллы и паки карт с динамическим расчетом редкости по оценкам и избранному (**UR 💎**, **SSR 🌟**, **SR ✨**, **R 🔷**, **N ⚪**).
+- **🏷️ Universal Tag Classifier**: Автоматическое распознавание и распределение тегов по категориям `Artist(s)`, `Character(s)`, `Series/Copyright`, `General` и `Meta` для всех поддерживаемых буру через пакетные запросы и эвристику.
+- **⚡ Плейсхолдеры и Auto-Gacha**: Поддержка токенов (`[gacha]`, `[gacha-wa]`, `[gacha-oa]`, `[gacha-oc]`, `[gacha-gen]`, `[gacha-all]`) с автоматической подстановкой при пакетной генерации.
+- **🛡️ Безопасное форматирование эмодзи**: Замена подчеркиваний на пробелы с сохранением текстовых смайлов (`^_^`, `>_<`, `o_o`, `0_0`, `=_=`, `@_@` и др.) и экранирование скобок `\(` `\)`.
+- **⭐ Встроенный браузер Избранного**: Сохранение понравившихся карточек с метаданными, просмотр промптов и быстрая вставка в позитивный или негативный промпт.
+- **🎨 Адаптивный визуал**: Солидный контрастный интерфейс в стандартном Gradio / Forge Neo и автоматическое включение glassmorphism, токенов Ant Design и голографических эффектов при активной **Lobe Theme Neo**.
 
 ---
 
-## 🌐 Поддерживаемые Booru-движки
+## Поддерживаемые буру
 
-| Движок / Сайт | Тип API | Категории тегов | Фильтр рейтинга | Мин. скор | Авторизация |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Danbooru** | JSON | ✅ Полная | ✅ `g`, `s`, `q`, `e` | ✅ | Логин + API Key |
-| **AIBooru (AI Art)** | JSON | ✅ Полная | ✅ `g`, `s`, `q`, `e` | ✅ | Логин + API Key |
-| **Yande.re (Moebooru)** | JSON | ✅ Полная | ✅ `s`, `q`, `e` | ✅ | Не требуется |
-| **Konachan** | JSON | ✅ Полная | ✅ `s`, `q`, `e` | ✅ | Не требуется |
-| **Gelbooru** | JSON / XML | ✅ Полная | ✅ `general`, `sensitive`, `questionable`, `explicit` | ✅ | API Key + User ID |
-| **Rule34** | JSON / XML | ✅ Полная | ✅ `general`, `sensitive`, `questionable`, `explicit` | ✅ | API Key + User ID |
-| **Safebooru** | JSON / XML | ✅ Полная | ✅ Только Safe | ✅ | Не требуется |
-| **e621 / e926** | JSON | ✅ Полная (Виды, Лор, Персонажи, Художники) | ✅ `s`, `q`, `e` | ✅ | Логин + API Key |
-| **Derpibooru (Philomena)** | JSON | ✅ Полная | ✅ `safe`, `suggestive`, `questionable`, `explicit` | ✅ | API Key |
-| **Custom Booru** | Любой движок | ✅ Настраиваемая | ✅ Настраиваемая | ✅ | Настраиваемая |
+| Сервис | Движок | Категоризация тегов | Фильтр рейтинга | Авторизация |
+| :--- | :--- | :---: | :---: | :---: |
+| **Danbooru** | Danbooru JSON | Нативная | Safe, Sensitive, Questionable, Explicit | Username + API Key |
+| **AIBooru (AI Art)** | Danbooru JSON | Нативная | Safe, Sensitive, Questionable, Explicit | Username + API Key |
+| **Yande.re** | Moebooru JSON | Universal Classifier | Safe, Questionable, Explicit | Не требуется |
+| **Konachan** | Moebooru JSON | Universal Classifier | Safe, Questionable, Explicit | Не требуется |
+| **Gelbooru** | Gelbooru DAPI | Universal Classifier | General, Sensitive, Questionable, Explicit | API Key + User ID |
+| **Rule34** | Gelbooru DAPI | Universal Classifier | General, Sensitive, Questionable, Explicit | API Key + User ID |
+| **Safebooru** | Gelbooru DAPI | Universal Classifier | Safe only | Не требуется |
+| **e621 / e926** | e621 JSON | Нативная | Safe, Questionable, Explicit | Username + API Key |
+| **Derpibooru** | Philomena JSON | Universal Classifier | Safe, Suggestive, Questionable, Explicit | API Key |
+| **Custom Booru** | Настраиваемый | Universal Classifier | Настраиваемый | Настраиваемый |
 
 ---
 
-## 🎯 Синтаксис плейсхолдеров в промптах
+## Плейсхолдеры промпта
 
-Вы можете указывать специальные токены прямо в основном или негативном промпте. При нажатии кнопок или при старте генерации токены автоматически заменяются на соответствующий набор тегов:
+Плейсхолдеры можно вставлять напрямую в поле промпта. При генерации они заменяются на выпавшие теги:
 
-| Плейсхолдер | Режим | Описание | Пример результата |
-| :--- | :--- | :--- | :--- |
-| `[gacha]` | **Полный ролл** | Вставляет все теги согласно активным настройкам форматирования. | `by citemoca, rem \(re:zero\), 1girl, blue hair, maid outfit` |
-| `[gacha-wa]` | **Без художника** (Without Artist) | Включает персонажа, франшизу и общие теги, но **исключает** художника. | `rem \(re:zero\), 1girl, blue hair, maid outfit, sitting` |
-| `[gacha-oa]` | **Только художник** (Only Artist) | Вставляет **только** тег художника в выбранном формате (`by <artist>` и др.). | `by citemoca` или `artist:citemoca` |
-| `[gacha-oc]` | **Только персонаж** (Only Character) | Вставляет **только** имена персонажей. | `rem \(re:zero\), ram \(re:zero\)` |
-| `[gacha-gen]` | **Только общие теги** (Only General) | Вставляет **только** теги окружения, позы, одежды и предметов. | `1girl, blue hair, maid outfit, sitting` |
-| `[gacha-all]` | **Все исходные теги** | Вставляет все теги без фильтрации категорий. | `citemoca, rem, 1girl, blue_hair, highres, absurdres` |
+| Плейсхолдер | Режим | Содержимое |
+| :--- | :--- | :--- |
+| `[gacha]` | **Полный промпт** | Все включенные категории тегов по настройкам форматирования |
+| `[gacha-wa]` | **Без художника** | Персонаж + Франшиза + Общие + Мета (без тегов автора) |
+| `[gacha-oa]` | **Только художник** | Тег автора с выбранным стилем форматирования (`by`, `artist:`, вес) |
+| `[gacha-oc]` | **Только персонаж** | Теги персонажей |
+| `[gacha-gen]` | **Только общие теги** | Теги окружения, внешности и позы |
+| `[gacha-all]` | **Все теги сырыми** | Все теги поста без фильтрации по категориям |
 
-### 💡 Примеры составления промптов
-
+### Пример использования:
 ```text
-# Разделение стилей художника и персонажа в разные части промпта
-masterpiece, best quality, [gacha-oa], 1girl, solo, [gacha-wa], highly detailed background, cinematic lighting
-
-# Ролл персонажа с собственным фиксированным стилем художника
-masterpiece, 8k wallpaper, [gacha-oc], by wlop, by artgerm, dynamic pose
-
-# Чистое исследование случайных эстетик
-[gacha], masterpiece, absurdres, volumetric lighting
+masterpiece, best quality, [gacha-oa], 1girl, [gacha-wa], highly detailed background
 ```
 
 ---
 
-## 🎨 Интерфейс и UX
+## Адаптивный интерфейс и темы
 
-```
-+-------------------------------------------------------------------------+
-| 🎲 Booru Tags Gacha                                                     |
-| Пресет: [ 🌸 Anime Solo Girl ▼ ]  [ 💾 Сохранить ]  [ ➕ Новый ]  [ 🗑️ ]  |
-+-------------------------------------------------------------------------+
-| Сайт: [ Danbooru ▼ ]   Рейтинг: [ safe ▼ ]   Мин. скор: [ 20 ]          |
-| Включить: [ 1girl, solo, scenic                                       ] |
-| Исключить: [ censored, text, watermark, bad anatomy                   ] |
-+-------------------------------------------------------------------------+
-| [ 🎲 1x Ролл ]      [ 🎰 5x Lucky Roll ]      [ 💎 10x Pull (SSR) ]     |
-+-------------------------------------------------------------------------+
-|  [ Превью карточки ] |  [ Галерея мульти-роллов Gradio 4 ]              |
-|  💎 UR ⭐⭐⭐⭐⭐    |  - Карточка 1: 🌟 SSR (Скор: 184)                |
-|  Скор: 195           |  - Карточка 2: 💎 UR  (Скор: 320)                |
-|  Рейтинг: Safe       |  - Карточка 3: ✨ SR  (Скор: 54)                 |
-+-------------------------------------------------------------------------+
-| Форматированные теги: [ by citemoca, rem \(re:zero\), 1girl...       ] |
-| Художник: [ citemoca ]  Персонаж: [ rem (re:zero) ]  Тайтл: [ re:zero ] |
-+-------------------------------------------------------------------------+
-| [ ➕ В конец ]  [ 🔄 Заменить ]  [ ⬆️ В начало ]  [ ⛔ В негативный ]     |
-| [ 🎨 Только художник ]  [ 👤 Только персонаж ]  [ ⭐ В избранное ]      |
-+-------------------------------------------------------------------------+
-| ⚙️ Расширенное форматирование тегов и категории (Спойлер)               |
-| ⚡ Auto-Gacha при генерации (Режим скрипта) (Спойлер)                    |
-+-------------------------------------------------------------------------+
-```
+- **Vanilla Gradio / Forge Neo**: Солидные контрастные элементы без нагрузки от `backdrop-filter`, мгновенная отрисовка и стабильность.
+- **Lobe Theme Neo**: Автоматическое подключение стилей Lobe Theme (`backdrop-blur`), токенов скруглений Ant Design, карточек редкостей и голографического блеска для UR/SSR.
+- **Изоляция SVG**: Защита от сброса стилей Tailwind CSS, предотвращающая растягивание иконок и окон превью.
 
 ---
 
-## 🚀 Установка
+## Установка
 
 ### Через вкладку Extensions в WebUI / Forge
 1. Откройте Stable Diffusion WebUI / Forge Neo.
-2. Перейдите в **Extensions** → **Install from URL**.
-3. Вставьте URL репозитория: `https://github.com/Haoming02/sd-webui-forge-classic` (или адрес вашего форка).
+2. Перейдите во вкладку **Extensions** → **Install from URL**.
+3. Вставьте ссылку: `https://github.com/LeonWGal/booru-tags-gacha.git`
 4. Нажмите **Install** и перезапустите интерфейс.
 
-### Вручную через Git
-Склонируйте репозиторий в папку `extensions`:
+### Ручная установка
 ```bash
 cd extensions
-git clone https://github.com/Haoming02/sd-webui-forge-classic.git booru-tags-gacha
+git clone https://github.com/LeonWGal/booru-tags-gacha.git
 ```
 
-Все зависимости (`aiohttp`, `nest_asyncio`) устанавливаются автоматически через `install.py`.
+Зависимости (`aiohttp`, `nest_asyncio`) устанавливаются автоматически через `install.py`.
 
 ---
 
-## ⚙️ Настройка API
+## Настройки и API ключи
 
-Перейдите в **Settings** → **Booru Tags Gacha** для настройки ключей доступа:
+Перейдите в **Settings** → **Booru Tags Gacha** для настройки учетных записей:
 
-- **Danbooru**: Логин + API Key ([Danbooru Profile](https://danbooru.donmai.us/profile))
-- **Gelbooru**: API Key + User ID ([Gelbooru Options](https://gelbooru.com/index.php?page=account&s=options))
-- **Rule34**: API Key + User ID ([Rule34 Options](https://rule34.xxx/index.php?page=account&s=options))
-- **e621 / e926**: Логин + API Key ([e621 API Access](https://e621.net/users/home))
-- **Derpibooru**: API Key ([Derpibooru Account](https://derpibooru.org/users/edit))
-- **Custom Booru**: Base URL, тип движка, API-ключ и учетные данные.
-- **Universal Tag Blacklist**: Черный список тегов через запятую (например: `nsfw, watermark, logo, text, bad anatomy`).
-
----
-
-## 🏛️ Архитектура проекта
-
-```
-booru-tags-gacha/
-├── install.py                  # Автоустановщик зависимостей
-├── style.css                   # CSS-стили для карточек, бейджей и тем Gradio 4
-├── gacha_presets.json          # Файл пользовательских пресетов
-├── gacha_favorites.json        # Файл сохраненного избранного
-├── README.md                   # Документация на английском
-├── README.ru-RU.md             # Документация на русском
-└── scripts/
-    ├── BooruTagsGacha.py       # Основной скрипт WebUI и разметка Gradio 4
-    └── boorus/
-        ├── __init__.py         # Реестр и фабрика клиентов
-        ├── base.py             # Модели BooruPost, BooruClient
-        ├── formatter.py        # Форматирование тегов, защита смайликов, плейсхолдеры
-        ├── gacha.py            # Асинхронный мульти-ролл и расчет раритетности
-        ├── presets.py          # Управление пресетами и миграция
-        ├── favorites.py        # Управление избранным и история сессии
-        ├── danbooru.py         # JSON-движок Danbooru
-        ├── aibooru.py          # AI-art движок AIBooru
-        ├── moebooru.py         # JSON-движок Yande.re и Konachan
-        ├── gelbooru.py         # DAPI-движок Gelbooru / Rule34 / Safebooru
-        ├── e621.py             # JSON-движок e621 / e926
-        ├── philomena.py        # Движок Derpibooru
-        └── custom.py           # Универсальный адаптер
-```
+- **Danbooru**: Username + API Key ([Профиль Danbooru](https://danbooru.donmai.us/profile))
+- **Gelbooru**: API Key + User ID ([Настройки Gelbooru](https://gelbooru.com/index.php?page=account&s=options))
+- **Rule34**: API Key + User ID ([Настройки Rule34](https://rule34.xxx/index.php?page=account&s=options))
+- **e621 / e926**: Username + API Key ([Ключи e621](https://e621.net/users/home))
+- **Derpibooru**: API Key ([Профиль Derpibooru](https://derpibooru.org/users/edit))
+- **Universal Tag Blacklist**: Список тегов через запятую для постоянного исключения из всех роллов.
 
 ---
 
-## ❓ Часто задаваемые вопросы (FAQ)
+## Лицензия
 
-#### В: Danbooru возвращает ошибку 403?
-> **О:** Danbooru защищен проверками Cloudflare. Расширение отправляет корректные заголовки браузера. Если блокировка сохраняется, укажите ваши Логин и API Key от Danbooru в настройках.
-
-#### В: Ломаются ли смайлики вроде `>_<` или `^_^` при замене подчеркиваний?
-> **О:** Нет. В Booru Tags Gacha реализована встроенная таблица исключений, защищающая смайлики и эмотиконы от замены символов `_`.
-
-#### В: Работает ли Auto-Gacha при пакетной генерации (`batch_size` / `n_iter`)?
-> **О:** Да! Скрипт генерирует уникальные роллы для каждого изображения в батче, позволяя быстро исследовать множество вариантов.
-
----
-
-## 📄 Лицензия
-
-Распространяется под лицензией [MIT License](./LICENSE).
+Проект распространяется под лицензией [MIT License](./LICENSE).
