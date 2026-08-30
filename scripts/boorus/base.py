@@ -1,17 +1,19 @@
 """Core data models, exceptions, and base client for Booru Tags Gacha."""
 
 import asyncio
+import html
 import aiohttp
 
 
 def normalize_tag(tag: str) -> str:
     """Canonical form for comparing user-entered tags against booru tags.
     
-    Converts spaces and hyphens to underscores, removes leading dashes, and lowercases.
+    Converts spaces and hyphens to underscores, removes leading dashes, unescapes HTML entities, and lowercases.
     """
     if not tag:
         return ""
-    return str(tag).strip().lstrip('-').lower().replace(' ', '_').replace('-', '_')
+    t = html.unescape(str(tag)).strip().lstrip('-').lower()
+    return t.replace(' ', '_').replace('-', '_')
 
 
 class BooruException(Exception):
@@ -69,14 +71,14 @@ class BooruPost:
         self.preview_url = preview_url or file_url or ""
         self.sample_url = sample_url or file_url or ""
         
-        self.tags_general = tags_general or []
-        self.tags_character = tags_character or []
-        self.tags_copyright = tags_copyright or []
-        self.tags_artist = tags_artist or []
-        self.tags_meta = tags_meta or []
+        self.tags_general = [html.unescape(t) for t in (tags_general or [])]
+        self.tags_character = [html.unescape(t) for t in (tags_character or [])]
+        self.tags_copyright = [html.unescape(t) for t in (tags_copyright or [])]
+        self.tags_artist = [html.unescape(t) for t in (tags_artist or [])]
+        self.tags_meta = [html.unescape(t) for t in (tags_meta or [])]
         
         if all_tags:
-            self._all_tags = all_tags
+            self._all_tags = [html.unescape(t) for t in all_tags]
         else:
             # Combine categories in natural order
             combined = []

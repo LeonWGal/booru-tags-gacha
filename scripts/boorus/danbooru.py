@@ -51,63 +51,107 @@ class DanbooruClient(BooruClient):
         rating: str | None = None,
         min_score: int = 0,
     ) -> BooruPost | None:
+        import random
+
         include = [normalize_tag(t) for t in (tags or []) if t.strip()]
         excluded = {normalize_tag(t) for t in (exclude_tags or []) if t.strip()}
 
-        # Build query params
-        query_terms = []
-        if rating and rating != "any":
-            rating_map = {"safe": "g", "sensitive": "s", "questionable": "q", "explicit": "e"}
-            if rating in rating_map:
-                query_terms.append(f"rating:{rating_map[rating]}")
+        rating_map = {"safe": "g", "sensitive": "s", "questionable": "q", "explicit": "e"}
+        norm_rating_char = rating_map.get(rating, None) if (rating and rating != "any") else None
 
-        if min_score > 0:
+        is_authenticated = bool(self._username and self._api_key)
+
+        # Authenticated users: Danbooru accepts up to 40 tags in query
+        if is_authenticated:
+            query_terms = ["order:random"]
+            if norm_rating_char:
+                query_terms.append(f"rating:{norm_rating_char}")
+            if min_score > 0:
+                query_terms.append(f"score:>={min_score}")
+            query_terms.extend(include)
+            for ex in excluded:
+                query_terms.append(f"-{ex}")
+
+            params = {
+                "tags": " ".join(query_terms),
+                "limit": 1,
+            }
+            data = await self._request("/posts.json", params)
+            if isinstance(data, list) and data and isinstance(data[0], dict):
+                return self._to_post(data[0])
+            return None
+
+        # Anonymous users: Danbooru STRICTLY limits queries to MAX 2 tags!
+        # Tag 1: order:random
+        # Tag 2: first include tag or rating filter
+        query_terms = ["order:random"]
+        if include:
+            query_terms.append(include[0])
+        elif norm_rating_char:
+            query_terms.append(f"rating:{norm_rating_char}")
+        elif min_score > 0:
             query_terms.append(f"score:>={min_score}")
 
-        # Add include tags (up to 2 for anonymous or all if authenticated)
-        max_api_tags = 40 if (self._username and self._api_key) else 2
-        for t in include:
-            if len(query_terms) < max_api_tags:
-                query_terms.append(t)
+        params = {
+            "tags": " ".join(query_terms),
+            "limit": 40,
+        }
 
-        params: dict[str, Any] = {}
-        if query_terms:
-            params["tags"] = ' '.join(query_terms)
-
-        # Reroll attempts if we need to filter client-side (e.g. excluded tags or remaining include tags)
-        attempts = 8 if (excluded or len(include) > len(query_terms)) else 3
-        for _ in range(attempts):
-            data = await self._request("/posts/random.json", params)
-            if not isinstance(data, dict) or not data.get("id"):
-                # Fallback to /posts.json?tags=order:random
-                fallback_params = dict(params)
-                fallback_params["tags"] = f"order:random {params.get('tags', '')}".strip()
-                fallback_params["limit"] = 1
-                list_data = await self._request("/posts.json", fallback_params)
-                if isinstance(list_data, list) and list_data:
-                    data = list_data[0]
-                else:
-                    return None
-
-            if not isinstance(data, dict) or not data.get("id"):
+        # Query candidate batch in a single fast request
+        data = await self._request("/posts.json", params)
+        if not isinstance(data, list) or not data:
+            if include:
+                data = await self._request("/posts.json", {"tags": include[0], "limit": 40})
+            if not isinstance(data, list) or not data:
                 return None
 
-            post = self._to_post(data)
-
-            # Check client-side exclude tags
-            if excluded and any(normalize_tag(t) in excluded for t in post.get_tags()):
+        # Filter candidates client-side
+        candidates = []
+        for raw in data:
+            if not isinstance(raw, dict) or not raw.get("id"):
                 continue
 
-            # Check client-side remaining include tags
-            if include and not all(any(normalize_tag(t) == req for t in post.get_tags()) for req in include):
+            # Check rating
+            if norm_rating_char:
+                post_r = raw.get("rating", "g")
+                if norm_rating_char == "g" and post_r not in ("g", "s"):
+                    continue
+                elif norm_rating_char in ("q", "e", "s") and post_r != norm_rating_char:
+                    continue
+
+            # Check min score
+            try:
+                post_score = int(raw.get("score", 0) or 0)
+            except (TypeError, ValueError):
+                post_score = 0
+            if min_score > 0 and post_score < min_score:
                 continue
 
-            if min_score > 0 and post.score < min_score:
+            # Check remaining include tags
+            post_all_tags = set((raw.get("tag_string") or "").split())
+            if len(include) > 1:
+                if not all(any(req == normalize_tag(t) for t in post_all_tags) for req in include[1:]):
+                    continue
+
+            # Check exclude tags
+            if excluded and any(normalize_tag(t) in excluded for t in post_all_tags):
                 continue
 
-            return post
+            candidates.append(raw)
 
-        return None
+        if not candidates:
+            # Relax score or rating slightly if strict filtering had 0 matches
+            for raw in data:
+                post_all_tags = set((raw.get("tag_string") or "").split())
+                if excluded and any(normalize_tag(t) in excluded for t in post_all_tags):
+                    continue
+                candidates.append(raw)
+
+        if not candidates:
+            return None
+
+        selected_raw = random.choice(candidates)
+        return self._to_post(selected_raw)
 
     def _to_post(self, raw: dict[str, Any]) -> BooruPost:
         post_id = raw.get("id", "")

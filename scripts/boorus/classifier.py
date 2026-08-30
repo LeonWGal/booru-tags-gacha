@@ -4,6 +4,7 @@ using Danbooru batch tag index, Gelbooru/Moebooru APIs, and smart heuristic rule
 """
 
 import asyncio
+import html
 from typing import Any
 import aiohttp
 from .base import normalize_tag
@@ -32,7 +33,7 @@ async def classify_tags(
     if not tags:
         return [], [], [], [], []
 
-    clean_tags = [t.strip() for t in tags if t.strip()]
+    clean_tags = [html.unescape(t).strip() for t in tags if t.strip()]
     uncached = [t for t in clean_tags if t not in _GLOBAL_TAG_CACHE]
 
     # 1. Quick heuristic pre-classification

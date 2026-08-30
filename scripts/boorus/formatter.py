@@ -1,5 +1,6 @@
 """Advanced Tag Formatter and Prompt Processor for Booru Tags Gacha."""
 
+import html
 import random
 import re
 from typing import Any
@@ -88,11 +89,11 @@ class TagFormatter:
 
     @staticmethod
     def clean_tag(tag: str, config: TagFormatConfig) -> str:
-        """Applies underscore replacement and parenthesis escaping to a single tag."""
+        """Applies HTML entity decoding, underscore replacement and parenthesis escaping to a single tag."""
         if not tag:
             return ""
         
-        t = tag.strip()
+        t = html.unescape(str(tag)).strip()
         
         # Replace underscores if enabled, preserving known emoticons
         if config.replace_underscores:

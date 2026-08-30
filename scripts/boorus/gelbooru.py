@@ -1,6 +1,7 @@
 """Client for Gelbooru-DAPI compatible boorus (Gelbooru, Rule34, Safebooru, TBIB)."""
 
 import asyncio
+import html
 import json
 from random import randint
 from typing import Any
@@ -99,37 +100,44 @@ class GelbooruClient(BooruClient):
         query_terms.extend(include)
         query_terms.extend(excluded)
 
-        # 1. Query first page to obtain count
-        base_params: dict[str, Any] = {
+        # 1. Query count via standard DAPI XML endpoint (returns accurate total count on Gelbooru, Rule34, Safebooru)
+        count_params: dict[str, Any] = {
             "page": "dapi",
             "s": "post",
             "q": "index",
             "limit": 1,
-            "json": 1,
         }
         if self._api_key:
-            base_params["api_key"] = self._api_key
+            count_params["api_key"] = self._api_key
         if self._user_id:
-            base_params["user_id"] = self._user_id
+            count_params["user_id"] = self._user_id
 
         if query_terms:
-            base_params["tags"] = ' '.join(query_terms)
+            count_params["tags"] = ' '.join(query_terms)
 
-        payload = await self._request(base_params)
-        count = self._extract_count(payload)
+        count_payload = await self._request(count_params)
+        count = self._extract_count(count_payload)
 
-        if count == 0:
-            return None
+        # 2. Fetch random post using pid offset
+        page_params = dict(count_params)
+        page_params["json"] = 1
 
-        # Max safe offset for Gelbooru is ~20000
-        max_offset = min(count - 1, 20000)
-        random_pid = randint(0, max(max_offset, 0))
-
-        page_params = dict(base_params)
-        page_params["pid"] = random_pid
+        if count > 1:
+            max_offset = min(count - 1, 20000)
+            page_params["pid"] = randint(0, max_offset)
+            page_params["limit"] = 1
+        else:
+            page_params["pid"] = 0
+            page_params["limit"] = 20
 
         post_payload = await self._request(page_params)
         raw_post = self._extract_first_post(post_payload)
+
+        if not raw_post:
+            # Fallback without json parameter (XML)
+            del page_params["json"]
+            xml_payload = await self._request(page_params)
+            raw_post = self._extract_first_post(xml_payload)
 
         if not raw_post:
             return None
@@ -176,18 +184,24 @@ class GelbooruClient(BooruClient):
 
     async def _to_post(self, raw: dict[str, Any]) -> BooruPost:
         raw = {k.lstrip('@'): v for k, v in raw.items()}
-        post_id = raw.get("id", "")
+        web_base = self._base_url.replace("api.rule34.xxx", "rule34.xxx").rstrip('/')
+        post_url = f"{web_base}/index.php?page=post&s=view&id={post_id}"
+
         file_url = raw.get("file_url") or ""
+        if not file_url and raw.get("image") and raw.get("directory"):
+            file_url = f"https://img3.gelbooru.com/images/{raw['directory']}/{raw['image']}"
         preview_url = raw.get("preview_url") or file_url
         sample_url = raw.get("sample_url") or file_url
 
-        tags_raw = str(raw.get("tags", "")).strip()
-        all_tags = tags_raw.split() if tags_raw else []
+        tags_raw = html.unescape(str(raw.get("tags", ""))).strip()
+        all_tags = [html.unescape(t) for t in tags_raw.split()] if tags_raw else []
 
         raw_rating = str(raw.get("rating", "general")).lower()
         rating_map = {
-            "g": "safe", "general": "safe", "s": "sensitive", "sensitive": "sensitive",
-            "q": "questionable", "questionable": "questionable", "e": "explicit", "explicit": "explicit",
+            "g": "safe", "general": "safe", "safe": "safe",
+            "s": "sensitive", "sensitive": "sensitive",
+            "q": "questionable", "questionable": "questionable",
+            "e": "explicit", "explicit": "explicit",
         }
         norm_rating = rating_map.get(raw_rating, "safe")
 
