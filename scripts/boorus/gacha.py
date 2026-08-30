@@ -72,15 +72,15 @@ class GachaPullResult:
 
     def get_gallery_caption(self) -> str:
         artist = ", ".join(self.post.tags_artist) if self.post.tags_artist else f"#{self.post.id}"
-        return f"{self.badge} | ⭐ {self.post.score} | {artist}"
+        return f"[{self.badge}] Score: {self.post.score} | {artist}"
 
     def to_summary_html(self) -> str:
         """Generates a clean HUD status bar with post metadata."""
         dim_str = f"{self.post.width}×{self.post.height}" if self.post.width and self.post.height else ""
-        dim_html = f'<span class="gacha-meta-pill">📐 {dim_str}</span>' if dim_str else ""
-        fav_html = f'<span class="gacha-meta-pill">❤️ {self.post.fav_count}</span>' if self.post.fav_count > 0 else ""
+        dim_html = f'<span class="gacha-meta-pill">{dim_str}</span>' if dim_str else ""
+        fav_html = f'<span class="gacha-meta-pill">Favs: {self.post.fav_count}</span>' if self.post.fav_count > 0 else ""
         tags_count = len(self.post.get_tags())
-        tags_html = f'<span class="gacha-meta-pill">🏷️ {tags_count} tags</span>' if tags_count > 0 else ""
+        tags_html = f'<span class="gacha-meta-pill">{tags_count} tags</span>' if tags_count > 0 else ""
 
         tier_cls = f"gacha-badge-{self.tier.lower()}"
         rating_cls = f"gacha-rating-{self.post.rating.lower()}"
@@ -91,16 +91,16 @@ class GachaPullResult:
                 {self.badge}
             </span>
             <span class="gacha-rating-pill {rating_cls}">
-                ● {self.post.rating}
+                ● {self.post.rating.upper()}
             </span>
             <span class="gacha-meta-pill">
-                ⭐ {self.post.score}
+                Score: {self.post.score}
             </span>
             {fav_html}
             {dim_html}
             {tags_html}
             <a href="{self.post.post_url}" target="_blank" rel="noopener noreferrer" class="gacha-post-link">
-                🔗 {self.site_name} #{self.post.id} ↗
+                {self.site_name} #{self.post.id} ↗
             </a>
         </div>
         """
@@ -114,7 +114,7 @@ class GachaPullResult:
             chips = "".join(f'<span class="gacha-chip gacha-chip-artist">{t}</span>' for t in self.post.tags_artist)
             groups.append(f"""
             <div class="gacha-tag-group">
-                <span class="gacha-tag-group-label">🎨 Artists ({len(self.post.tags_artist)})</span>
+                <span class="gacha-tag-group-label">Artists ({len(self.post.tags_artist)})</span>
                 <div class="gacha-tag-group-items">{chips}</div>
             </div>
             """)
@@ -124,7 +124,7 @@ class GachaPullResult:
             chips = "".join(f'<span class="gacha-chip gacha-chip-character">{t}</span>' for t in self.post.tags_character)
             groups.append(f"""
             <div class="gacha-tag-group">
-                <span class="gacha-tag-group-label">👤 Characters ({len(self.post.tags_character)})</span>
+                <span class="gacha-tag-group-label">Characters ({len(self.post.tags_character)})</span>
                 <div class="gacha-tag-group-items">{chips}</div>
             </div>
             """)
@@ -134,7 +134,7 @@ class GachaPullResult:
             chips = "".join(f'<span class="gacha-chip gacha-chip-copyright">{t}</span>' for t in self.post.tags_copyright)
             groups.append(f"""
             <div class="gacha-tag-group">
-                <span class="gacha-tag-group-label">📜 Series ({len(self.post.tags_copyright)})</span>
+                <span class="gacha-tag-group-label">Series ({len(self.post.tags_copyright)})</span>
                 <div class="gacha-tag-group-items">{chips}</div>
             </div>
             """)
@@ -144,7 +144,7 @@ class GachaPullResult:
             chips = "".join(f'<span class="gacha-chip gacha-chip-meta">{t}</span>' for t in self.post.tags_meta)
             groups.append(f"""
             <div class="gacha-tag-group">
-                <span class="gacha-tag-group-label">⚙️ Meta ({len(self.post.tags_meta)})</span>
+                <span class="gacha-tag-group-label">Meta ({len(self.post.tags_meta)})</span>
                 <div class="gacha-tag-group-items">{chips}</div>
             </div>
             """)
@@ -166,20 +166,20 @@ def get_multi_pull_stats_html(results: list[GachaPullResult]) -> str:
 
     badges = []
     if counts["UR"] > 0:
-        badges.append(f'<span class="gacha-badge gacha-badge-ur">💎 {counts["UR"]}x UR</span>')
+        badges.append(f'<span class="gacha-badge gacha-badge-ur">UR: {counts["UR"]}</span>')
     if counts["SSR"] > 0:
-        badges.append(f'<span class="gacha-badge gacha-badge-ssr">🌟 {counts["SSR"]}x SSR</span>')
+        badges.append(f'<span class="gacha-badge gacha-badge-ssr">SSR: {counts["SSR"]}</span>')
     if counts["SR"] > 0:
-        badges.append(f'<span class="gacha-badge gacha-badge-sr">✨ {counts["SR"]}x SR</span>')
+        badges.append(f'<span class="gacha-badge gacha-badge-sr">SR: {counts["SR"]}</span>')
     if counts["R"] > 0:
-        badges.append(f'<span class="gacha-badge gacha-badge-r">🔷 {counts["R"]}x R</span>')
+        badges.append(f'<span class="gacha-badge gacha-badge-r">R: {counts["R"]}</span>')
     if counts["N"] > 0:
-        badges.append(f'<span class="gacha-badge gacha-badge-n">⚪ {counts["N"]}x N</span>')
+        badges.append(f'<span class="gacha-badge gacha-badge-n">N: {counts["N"]}</span>')
 
     summary_badges = " ".join(badges)
     return f"""
     <div class="gacha-stats-banner">
-        <span>🎰 <strong>{len(results)}x Multi-Pull Result:</strong></span>
+        <span><strong>Multi-Pull Result ({len(results)}x):</strong></span>
         <div class="gacha-stats-count-group">{summary_badges}</div>
     </div>
     """

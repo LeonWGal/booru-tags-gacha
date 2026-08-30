@@ -1,10 +1,10 @@
 {
-  "🌸 Anime Solo Girl": {
+  "Anime Solo Girl": {
     "site": "danbooru",
-    "rating": "safe",
-    "min_score": 25,
     "include": "1girl, solo",
-    "exclude": "censored, text, watermark, bad anatomy, bad quality",
+    "exclude": "censored, text, watermark, bad anatomy",
+    "rating": "safe",
+    "min_score": 20,
     "include_general": true,
     "include_character": true,
     "include_copyright": true,
@@ -14,23 +14,23 @@
     "artist_weight": 1.1,
     "max_general_tags": 25
   },
-  "🦄 Pony & Illustrious Anime": {
+  "Pony & Illustrious Anime": {
     "site": "danbooru",
+    "include": "score_9, score_8_up, score_7_up, source_anime, 1girl",
+    "exclude": "censored, bad quality, worst quality, text, watermark",
     "rating": "safe",
-    "min_score": 30,
-    "include": "1girl, solo, masterpiece",
-    "exclude": "censored, text, watermark, lowres, bad hands",
+    "min_score": 35,
     "include_general": true,
     "include_character": true,
     "include_copyright": true,
     "include_artist": true,
     "include_meta": false,
     "artist_format": "raw",
-    "artist_weight": 1.1,
-    "max_general_tags": 30
+    "artist_weight": 1.0,
+    "max_general_tags": 20
   },
-  "🎨 Masterpiece Artists Showcase": {
-    "site": "yandere",
+  "Masterpiece Artists": {
+    "site": "yande",
     "include": "solo",
     "exclude": "bad art, text, logo, lowres",
     "rating": "safe",
@@ -44,12 +44,12 @@
     "artist_weight": 1.15,
     "max_general_tags": 20
   },
-  "🌆 Cyberpunk & Neon City": {
+  "Cyberpunk & Neon": {
     "site": "danbooru",
     "include": "cyberpunk, neon, cityscape",
     "exclude": "monochrome, blurry, text",
     "rating": "safe",
-    "min_score": 20,
+    "min_score": 15,
     "include_general": true,
     "include_character": true,
     "include_copyright": true,
@@ -59,12 +59,12 @@
     "artist_weight": 1.1,
     "max_general_tags": 25
   },
-  "🏰 Fantasy Scenery & Landscapes": {
+  "Fantasy Scenery": {
     "site": "gelbooru",
     "include": "scenery, landscape, fantasy",
-    "exclude": "monochrome, sketch, comic, text",
+    "exclude": "monochrome, sketch, comic",
     "rating": "safe",
-    "min_score": 15,
+    "min_score": 10,
     "include_general": true,
     "include_character": false,
     "include_copyright": true,
@@ -74,12 +74,12 @@
     "artist_weight": 1.1,
     "max_general_tags": 30
   },
-  "🤖 Mecha & Sci-Fi": {
+  "Mecha & Sci-Fi": {
     "site": "danbooru",
     "include": "mecha, robot, sci-fi",
-    "exclude": "chibi, lowres, text",
+    "exclude": "chibi, lowres",
     "rating": "safe",
-    "min_score": 15,
+    "min_score": 10,
     "include_general": true,
     "include_character": true,
     "include_copyright": true,
@@ -89,7 +89,7 @@
     "artist_weight": 1.1,
     "max_general_tags": 25
   },
-  "🐾 Anthropomorphic (e621)": {
+  "Anthropomorphic (e621)": {
     "site": "e621",
     "include": "solo, anthro",
     "exclude": "feral, gore, text",
@@ -104,7 +104,7 @@
     "artist_weight": 1.1,
     "max_general_tags": 25
   },
-  "🌟 AI Prompt Explorer (AIBooru)": {
+  "AI Prompt Explorer (AIBooru)": {
     "site": "aibooru",
     "include": "masterpiece, 1girl",
     "exclude": "bad quality, watermark, signature",
@@ -119,7 +119,7 @@
     "artist_weight": 1.1,
     "max_general_tags": 30
   },
-  "🎲 True Random Chaos": {
+  "True Random Chaos": {
     "site": "safebooru",
     "include": "",
     "exclude": "watermark, text, lowres",

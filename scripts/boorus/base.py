@@ -112,18 +112,18 @@ class BooruPost:
 
     @property
     def rarity(self) -> tuple[str, str, str]:
-        """Calculates gacha rarity (tier, badge, star_label) based on score and favorites."""
+        """Calculates gacha rarity (tier, badge, label) based on score and favorites."""
         metric = max(self.score, self.fav_count * 2)
         if metric >= 150:
-            return "UR", "💎 UR", "⭐⭐⭐⭐⭐ Ultra Rare"
+            return "UR", "UR", "Ultra Rare"
         elif metric >= 75:
-            return "SSR", "🌟 SSR", "⭐⭐⭐⭐ Super Super Rare"
+            return "SSR", "SSR", "Super Super Rare"
         elif metric >= 35:
-            return "SR", "✨ SR", "⭐⭐⭐ Super Rare"
+            return "SR", "SR", "Super Rare"
         elif metric >= 10:
-            return "R", "🔷 R", "⭐⭐ Rare"
+            return "R", "R", "Rare"
         else:
-            return "N", "⚪ N", "⭐ Normal"
+            return "N", "N", "Normal"
 
     def get_tags(self) -> list[str]:
         return list(self._all_tags)

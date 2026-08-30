@@ -1,4 +1,4 @@
-# 🎲 Booru Tags Gacha
+# Booru Tags Gacha
 
 [![Platform](https://img.shields.io/badge/Platform-SD--WebUI%20%7C%20Forge%20Neo-blue?style=flat-square)](https://github.com/LeonWGal/booru-tags-gacha)
 [![Gradio](https://img.shields.io/badge/Gradio-4.x%20%2F%205.x-orange?style=flat-square)](https://gradio.app/)
@@ -24,12 +24,12 @@ Booru tag randomizer, multi-pull gacha engine, and prompt formatter for **Stable
 
 ## Features
 
-- **🎰 Multi-Pull Gacha (1x, 5x, 10x)**: Single roll or multi-card packs with dynamic rarity calculation based on score and favorites (**UR 💎**, **SSR 🌟**, **SR ✨**, **R 🔷**, **N ⚪**).
-- **🏷️ Universal Tag Classifier**: Automatically identifies and categorizes tags into `Artist(s)`, `Character(s)`, `Series/Copyright`, `General`, and `Meta` across all supported boorus using batch tag lookups and heuristic detection.
-- **⚡ Prompt Placeholders & Auto-Gacha**: Flexible placeholder tokens (`[gacha]`, `[gacha-wa]`, `[gacha-oa]`, `[gacha-oc]`, `[gacha-gen]`, `[gacha-all]`) with support for batch generation replacement.
-- **🛡️ Emoticon-Safe Formatter**: Replaces underscores with spaces while preserving face emoticons (`^_^`, `>_<`, `o_o`, `0_0`, `=_=`, `@_@`, etc.) and automatically escapes SD prompt parentheses `\(` `\)`.
-- **⭐ Built-in Favorites Explorer**: Save favorite cards with full metadata, inspect saved prompts, and re-inject them into positive or negative prompts anytime.
-- **🎨 Adaptive Styling**: Clean, high-contrast solid native Gradio interface by default; seamlessly activates glassmorphism, Ant Design tokens, and holographic badges when **Lobe Theme Neo** is active.
+- **Multi-Pull Gacha (1x, 5x, 10x)**: Single roll or multi-card packs with dynamic rarity calculation based on score and favorites (**UR**, **SSR**, **SR**, **R**, **N**).
+- **Universal Tag Classifier**: Automatically identifies and categorizes tags into `Artist`, `Character`, `Series / Copyright`, `General`, and `Meta` across all supported boorus using batch lookups and heuristic detection.
+- **Prompt Placeholders & Auto-Gacha**: Flexible placeholder tokens (`[gacha]`, `[gacha-wa]`, `[gacha-oa]`, `[gacha-oc]`, `[gacha-gen]`, `[gacha-all]`) with support for batch generation replacement.
+- **Emoticon-Safe Formatter**: Replaces underscores with spaces while preserving face emoticons (`^_^`, `>_<`, `o_o`, `0_0`, `=_=`, `@_@`, etc.) and automatically escapes SD prompt parentheses `\(` `\)`.
+- **Favorites Explorer**: Save favorite cards with full metadata, inspect saved prompts, and re-inject them into positive or negative prompts anytime.
+- **Adaptive Styling**: Clean, high-contrast solid native Gradio interface by default; seamlessly activates glassmorphism, Ant Design tokens, and holographic badges when **Lobe Theme Neo** is active.
 
 ---
 

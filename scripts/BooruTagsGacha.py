@@ -68,7 +68,7 @@ class BooruTagsGachaScript(scripts.Script):
     def ui(self, is_img2img):
         mode = "img2img" if is_img2img else "txt2img"
         all_preset_names = presets.get_preset_names()
-        default_preset_name = all_preset_names[0] if all_preset_names else "🌸 Anime Solo Girl"
+        default_preset_name = all_preset_names[0] if all_preset_names else "Anime Solo Girl"
         current_preset = presets.get_preset(default_preset_name)
 
         # Internal state for multi-card gacha and history
@@ -77,29 +77,29 @@ class BooruTagsGachaScript(scripts.Script):
         history_state = gr.State([])
         history_idx_state = gr.State(-1)
 
-        with gr.Accordion(f"🎲 {EXTENSION_NAME}", open=False, elem_classes=["booru-gacha-container"]):
+        with gr.Accordion(EXTENSION_NAME, open=False, elem_classes=["booru-gacha-container"]):
             # Top Preset Manager Bar
             with gr.Row(equal_height=True):
                 preset_dropdown = gr.Dropdown(
-                    label="Active Preset",
+                    label="Preset",
                     choices=all_preset_names,
                     value=default_preset_name,
                     scale=4,
                 )
-                save_preset_btn = gr.Button("💾 Save", size="sm", scale=1)
-                new_preset_btn = gr.Button("➕ New", size="sm", scale=1)
-                del_preset_btn = gr.Button("🗑️ Delete", size="sm", scale=1)
+                save_preset_btn = gr.Button("Save", size="sm", scale=1)
+                new_preset_btn = gr.Button("New", size="sm", scale=1)
+                del_preset_btn = gr.Button("Delete", size="sm", scale=1)
 
             # Search & Filter Controls
             with gr.Row():
                 site_dropdown = gr.Dropdown(
-                    label="Booru Site",
+                    label="Site",
                     choices=[label for label, _ in SITE_CHOICES],
                     value=SITE_LABEL_BY_KEY.get(current_preset.get("site", DEFAULT_SITE), "Danbooru"),
                     scale=2,
                 )
                 rating_dropdown = gr.Dropdown(
-                    label="Rating Filter",
+                    label="Rating",
                     choices=["any", "safe", "sensitive", "questionable", "explicit"],
                     value=current_preset.get("rating", "safe"),
                     scale=1,
@@ -127,10 +127,10 @@ class BooruTagsGachaScript(scripts.Script):
 
             # Gacha Pull Buttons
             with gr.Row():
-                pull_1x_btn = gr.Button("🎲 1x Roll", elem_classes=["gacha-pull-btn", "gacha-pull-btn-1x"])
-                pull_5x_btn = gr.Button("🎰 5x Lucky Roll", elem_classes=["gacha-pull-btn", "gacha-pull-btn-5x"])
-                pull_10x_btn = gr.Button("💎 10x Pull (SSR Guaranteed)", elem_classes=["gacha-pull-btn", "gacha-pull-btn-10x"])
-                cancel_pull_btn = gr.Button("🛑 Cancel", elem_classes=["gacha-pull-btn", "gacha-pull-btn-cancel"])
+                pull_1x_btn = gr.Button("Roll 1x", elem_classes=["gacha-pull-btn", "gacha-pull-btn-1x"])
+                pull_5x_btn = gr.Button("Lucky 5x", elem_classes=["gacha-pull-btn", "gacha-pull-btn-5x"])
+                pull_10x_btn = gr.Button("Multi 10x (SSR)", elem_classes=["gacha-pull-btn", "gacha-pull-btn-10x"])
+                cancel_pull_btn = gr.Button("Cancel", elem_classes=["gacha-pull-btn", "gacha-pull-btn-cancel"])
 
             # Multi-Pull Stats Banner & Selected HUD
             stats_banner_html = gr.HTML(value="", elem_classes=["gacha-stats-wrap"])
@@ -140,7 +140,7 @@ class BooruTagsGachaScript(scripts.Script):
             with gr.Row(elem_classes=["gacha-preview-gallery-row"]):
                 with gr.Column(scale=1, min_width=220, elem_classes=["gacha-preview-col"]):
                     preview_image = gr.Image(
-                        label="Selected Post Preview",
+                        label="Selected Preview",
                         interactive=False,
                         height=360,
                         show_label=False,
@@ -150,7 +150,7 @@ class BooruTagsGachaScript(scripts.Script):
                     )
                 with gr.Column(scale=2, min_width=300, elem_classes=["gacha-gallery-col"]):
                     gacha_gallery = gr.Gallery(
-                        label="Gacha Multi-Pull Cards (Click card to select)",
+                        label="Gacha Multi-Pull Cards",
                         show_label=False,
                         elem_id="booru_gacha_gallery",
                         elem_classes=["gacha-gallery-grid"],
@@ -178,39 +178,39 @@ class BooruTagsGachaScript(scripts.Script):
                 )
 
             with gr.Row():
-                artist_tags_box = gr.Textbox(label="Artist(s)", show_copy_button=True, scale=1)
-                character_tags_box = gr.Textbox(label="Character(s)", show_copy_button=True, scale=1)
-                copyright_tags_box = gr.Textbox(label="Series/Copyright", show_copy_button=True, scale=1)
+                artist_tags_box = gr.Textbox(label="Artist", show_copy_button=True, scale=1)
+                character_tags_box = gr.Textbox(label="Character", show_copy_button=True, scale=1)
+                copyright_tags_box = gr.Textbox(label="Series / Copyright", show_copy_button=True, scale=1)
 
             # Quick Prompt Actions
             with gr.Row():
-                append_prompt_btn = gr.Button("➕ Append Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
-                replace_prompt_btn = gr.Button("🔄 Replace Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
-                prepend_prompt_btn = gr.Button("⬆️ Prepend Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
-                add_negative_btn = gr.Button("⛔ To Negative", elem_classes=["gacha-action-btn", "gacha-insert-btn", "gacha-neg-btn"])
+                append_prompt_btn = gr.Button("Append Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
+                replace_prompt_btn = gr.Button("Replace Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
+                prepend_prompt_btn = gr.Button("Prepend Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
+                add_negative_btn = gr.Button("To Negative", elem_classes=["gacha-action-btn", "gacha-insert-btn", "gacha-neg-btn"])
 
             with gr.Row():
-                insert_artist_btn = gr.Button("🎨 Insert Artist Only", size="sm", elem_classes=["gacha-sub-btn"])
-                insert_character_btn = gr.Button("👤 Insert Character Only", size="sm", elem_classes=["gacha-sub-btn"])
-                fav_post_btn = gr.Button("⭐ Save to Favorites", size="sm", elem_classes=["gacha-sub-btn", "gacha-fav-btn"])
+                insert_artist_btn = gr.Button("Insert Artist", size="sm", elem_classes=["gacha-sub-btn"])
+                insert_character_btn = gr.Button("Insert Character", size="sm", elem_classes=["gacha-sub-btn"])
+                fav_post_btn = gr.Button("Save to Favorites", size="sm", elem_classes=["gacha-sub-btn", "gacha-fav-btn"])
 
             # History & Navigation Row
             with gr.Row():
-                prev_btn = gr.Button("◀ Previous Roll", size="sm", elem_classes=["gacha-sub-btn"])
-                next_btn = gr.Button("Next Roll ▶", size="sm", elem_classes=["gacha-sub-btn"])
-                clear_btn = gr.Button("🗑️ Clear", size="sm", elem_classes=["gacha-sub-btn"])
+                prev_btn = gr.Button("Previous", size="sm", elem_classes=["gacha-sub-btn"])
+                next_btn = gr.Button("Next", size="sm", elem_classes=["gacha-sub-btn"])
+                clear_btn = gr.Button("Clear", size="sm", elem_classes=["gacha-sub-btn"])
 
             # Built-in Favorites Browser Section
             def _safe_get_fav_choices():
                 try:
                     return [
-                        f"{f.get('rarity', '⭐')} #{f.get('id')} ({f.get('site')}) - {', '.join(f.get('tags_artist', []) or ['unknown'])}"
+                        f"[{f.get('rarity', 'R')}] #{f.get('id')} ({f.get('site')}) - {', '.join(f.get('tags_artist', []) or ['unknown'])}"
                         for f in favorites.load_favorites()
                     ]
                 except Exception:
                     return []
 
-            with gr.Accordion("⭐ Saved Favorites Explorer", open=False):
+            with gr.Accordion("Favorites Explorer", open=False):
                 fav_list_choices = _safe_get_fav_choices()
                 with gr.Row():
                     fav_dropdown = gr.Dropdown(
@@ -219,16 +219,16 @@ class BooruTagsGachaScript(scripts.Script):
                         value=fav_list_choices[0] if fav_list_choices else None,
                         scale=3,
                     )
-                    fav_load_btn = gr.Button("📥 Load to Formatted Tags", size="sm", scale=1)
-                    fav_del_btn = gr.Button("🗑️ Delete Favorite", size="sm", scale=1)
-                    fav_clear_all_btn = gr.Button("⚠️ Clear All", size="sm", scale=1)
+                    fav_load_btn = gr.Button("Load to Prompt", size="sm", scale=1)
+                    fav_del_btn = gr.Button("Delete Favorite", size="sm", scale=1)
+                    fav_clear_all_btn = gr.Button("Clear All", size="sm", scale=1)
 
             # Collapsible Advanced Formatting Configuration
-            with gr.Accordion("⚙️ Advanced Tag Formatting & Category Options", open=False):
+            with gr.Accordion("Advanced Tag Formatting", open=False):
                 with gr.Row():
                     inc_general_chk = gr.Checkbox(label="General Tags", value=current_preset.get("include_general", True))
                     inc_char_chk = gr.Checkbox(label="Character Tags", value=current_preset.get("include_character", True))
-                    inc_copy_chk = gr.Checkbox(label="Copyright/Series", value=current_preset.get("include_copyright", True))
+                    inc_copy_chk = gr.Checkbox(label="Series / Copyright", value=current_preset.get("include_copyright", True))
                     inc_artist_chk = gr.Checkbox(label="Artist Tags", value=current_preset.get("include_artist", True))
                     inc_meta_chk = gr.Checkbox(label="Meta Tags", value=current_preset.get("include_meta", False))
 
@@ -236,7 +236,7 @@ class BooruTagsGachaScript(scripts.Script):
                     replace_underscores_chk = gr.Checkbox(label="Replace _ with Space (Preserve Emoticons)", value=True)
                     escape_parens_chk = gr.Checkbox(label=r"Escape Parentheses \( \)", value=True)
                     artist_fmt_dropdown = gr.Dropdown(
-                        label="Artist Format Style",
+                        label="Artist Format",
                         choices=["raw", "by", "artist_prefix", "weighted"],
                         value=current_preset.get("artist_format", "raw"),
                     )
@@ -256,18 +256,18 @@ class BooruTagsGachaScript(scripts.Script):
                         step=1,
                         value=current_preset.get("max_general_tags", 25),
                     )
-                    tag_prefix_box = gr.Textbox(label="Custom Prefix", placeholder="e.g. masterpiece, best quality,")
-                    tag_suffix_box = gr.Textbox(label="Custom Suffix", placeholder="e.g. highres, absurdres")
+                    tag_prefix_box = gr.Textbox(label="Prompt Prefix", placeholder="e.g. masterpiece, best quality,")
+                    tag_suffix_box = gr.Textbox(label="Prompt Suffix", placeholder="e.g. highres, absurdres")
 
             # Collapsible Auto-Gacha on Generate
-            with gr.Accordion("⚡ Auto-Gacha on Generate (Script Mode)", open=False):
+            with gr.Accordion("Auto-Gacha on Generate", open=False):
                 gr.Markdown(
-                    "Enable to automatically roll random tags from this preset on every generation! "
-                    "Supports placeholder replacement: `[gacha]` (full prompt), `[gacha-wa]` (with character, without artist), "
+                    "Automatically roll random tags on every generation. "
+                    "Supports placeholder substitution: `[gacha]` (full prompt), `[gacha-wa]` (without artist), "
                     "`[gacha-oa]` (only artist), `[gacha-oc]` (only character), `[gacha-gen]` (only general)."
                 )
                 with gr.Row():
-                    auto_gacha_chk = gr.Checkbox(label="⚡ Enable Auto-Gacha on Generate", value=False)
+                    auto_gacha_chk = gr.Checkbox(label="Enable Auto-Gacha on Generate", value=False)
                     auto_mode_dropdown = gr.Dropdown(
                         label="Auto-Gacha Mode",
                         choices=[
@@ -278,7 +278,7 @@ class BooruTagsGachaScript(scripts.Script):
                         ],
                         value="Replace [gacha...] placeholders",
                     )
-                    auto_neg_chk = gr.Checkbox(label="Auto-Add Exclude Tags to Negative Prompt", value=False)
+                    auto_neg_chk = gr.Checkbox(label="Auto-Add Exclude Tags to Negative", value=False)
 
         # Helper to construct TagFormatConfig from UI values
         def _get_format_config(
@@ -359,7 +359,7 @@ class BooruTagsGachaScript(scripts.Script):
             }
             presets.save_preset(preset_name, data)
             all_names = presets.get_preset_names()
-            gr.Info(f"💾 Preset '{preset_name}' saved successfully!")
+            gr.Info(f"Preset '{preset_name}' saved")
             return gr.Dropdown(choices=all_names, value=preset_name)
 
         save_preset_btn.click(
@@ -379,7 +379,7 @@ class BooruTagsGachaScript(scripts.Script):
             new_name = f"Custom Preset {len(all_names) + 1}"
             presets.save_preset(new_name, presets.get_preset(current_name))
             updated_names = presets.get_preset_names()
-            gr.Info(f"➕ Created new preset '{new_name}'")
+            gr.Info(f"Created preset '{new_name}'")
             return gr.Dropdown(choices=updated_names, value=new_name)
 
         new_preset_btn.click(
@@ -393,7 +393,7 @@ class BooruTagsGachaScript(scripts.Script):
             deleted = presets.delete_preset(preset_name)
             updated_names = presets.get_preset_names()
             if deleted:
-                gr.Info(f"🗑️ Deleted preset '{preset_name}'")
+                gr.Info(f"Deleted preset '{preset_name}'")
             return gr.Dropdown(choices=updated_names, value=updated_names[0])
 
         del_preset_btn.click(
@@ -428,7 +428,7 @@ class BooruTagsGachaScript(scripts.Script):
             if not results:
                 status = """
                 <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 8px 12px; border-radius: 6px; color: #ef4444;">
-                    ⚠️ No posts found matching criteria or site is unavailable. Try adjusting Include/Exclude tags or score.
+                    No posts found matching criteria or site is unavailable. Try adjusting Include/Exclude tags or score.
                 </div>
                 """
                 return (
@@ -621,9 +621,9 @@ class BooruTagsGachaScript(scripts.Script):
                 card: GachaPullResult = results_list[idx]
                 added = favorites.add_favorite(card.post, card.site, full_prompt)
                 if added:
-                    gr.Info("⭐ Card added to Favorites!")
+                    gr.Info("Card added to Favorites")
                 else:
-                    gr.Warning("ℹ️ This post is already in your Favorites")
+                    gr.Warning("This post is already in Favorites")
                 
                 # Refresh favorites list
                 fav_choices = _safe_get_fav_choices()
@@ -643,13 +643,13 @@ class BooruTagsGachaScript(scripts.Script):
             
             all_favs = favorites.load_favorites()
             for f in all_favs:
-                repr_str = f"{f.get('rarity', '⭐')} #{f.get('id')} ({f.get('site')}) - {', '.join(f.get('tags_artist', []) or ['unknown'])}"
+                repr_str = f"[{f.get('rarity', 'R')}] #{f.get('id')} ({f.get('site')}) - {', '.join(f.get('tags_artist', []) or ['unknown'])}"
                 if repr_str == fav_str or f"#{f.get('id')}" in fav_str:
                     full_p = f.get("formatted_prompt", "") or ", ".join(f.get("all_tags", []))
                     art_p = ", ".join(f.get("tags_artist", []))
                     char_p = ", ".join(f.get("tags_character", []))
                     copy_p = ", ".join(f.get("tags_copyright", []))
-                    gr.Info(f"📥 Loaded favorite post #{f.get('id')}")
+                    gr.Info(f"Loaded favorite post #{f.get('id')}")
                     return full_p, art_p, char_p, copy_p
             return gr.update(), gr.update(), gr.update(), gr.update()
 
@@ -666,13 +666,13 @@ class BooruTagsGachaScript(scripts.Script):
             
             all_favs = favorites.load_favorites()
             for f in all_favs:
-                repr_str = f"{f.get('rarity', '⭐')} #{f.get('id')} ({f.get('site')}) - {', '.join(f.get('tags_artist', []) or ['unknown'])}"
+                repr_str = f"[{f.get('rarity', 'R')}] #{f.get('id')} ({f.get('site')}) - {', '.join(f.get('tags_artist', []) or ['unknown'])}"
                 if repr_str == fav_str or f"#{f.get('id')}" in fav_str:
                     favorites.remove_favorite(f.get("fav_id"))
                     break
 
             fav_choices = _safe_get_fav_choices()
-            gr.Info("🗑️ Favorite deleted")
+            gr.Info("Favorite deleted")
             return gr.Dropdown(choices=fav_choices, value=fav_choices[0] if fav_choices else None)
 
         fav_del_btn.click(
@@ -684,7 +684,7 @@ class BooruTagsGachaScript(scripts.Script):
         # Event: Clear All Favorites
         def _on_clear_all_favs():
             favorites.clear_favorites()
-            gr.Info("⚠️ All favorites cleared")
+            gr.Info("All favorites cleared")
             return gr.Dropdown(choices=[], value=None)
 
         fav_clear_all_btn.click(

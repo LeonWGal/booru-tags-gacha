@@ -14,7 +14,7 @@ _PRESET_LOCK = threading.RLock()
 
 
 DEFAULT_PRESETS: dict[str, dict[str, Any]] = {
-    "🌸 Anime Solo Girl": {
+    "Anime Solo Girl": {
         "site": SITE_DANBOORU,
         "include": "1girl, solo",
         "exclude": "censored, text, watermark, bad anatomy",
@@ -29,7 +29,7 @@ DEFAULT_PRESETS: dict[str, dict[str, Any]] = {
         "artist_weight": 1.1,
         "max_general_tags": 25,
     },
-    "🎨 Masterpiece Artists": {
+    "Masterpiece Artists": {
         "site": SITE_YANDERE,
         "include": "solo",
         "exclude": "bad art, text, logo, lowres",
@@ -44,7 +44,7 @@ DEFAULT_PRESETS: dict[str, dict[str, Any]] = {
         "artist_weight": 1.15,
         "max_general_tags": 20,
     },
-    "🌆 Cyberpunk & Neon": {
+    "Cyberpunk & Neon": {
         "site": SITE_DANBOORU,
         "include": "cyberpunk, neon, cityscape",
         "exclude": "monochrome, blurry, text",
@@ -59,7 +59,7 @@ DEFAULT_PRESETS: dict[str, dict[str, Any]] = {
         "artist_weight": 1.1,
         "max_general_tags": 25,
     },
-    "🏰 Fantasy Scenery": {
+    "Fantasy Scenery": {
         "site": SITE_GELBOORU,
         "include": "scenery, landscape, fantasy",
         "exclude": "monochrome, sketch, comic",
@@ -74,7 +74,7 @@ DEFAULT_PRESETS: dict[str, dict[str, Any]] = {
         "artist_weight": 1.1,
         "max_general_tags": 30,
     },
-    "🤖 Mecha & Sci-Fi": {
+    "Mecha & Sci-Fi": {
         "site": SITE_DANBOORU,
         "include": "mecha, robot, sci-fi",
         "exclude": "chibi, lowres",
@@ -89,7 +89,7 @@ DEFAULT_PRESETS: dict[str, dict[str, Any]] = {
         "artist_weight": 1.1,
         "max_general_tags": 25,
     },
-    "🐾 Anthropomorphic (e621)": {
+    "Anthropomorphic (e621)": {
         "site": SITE_E621,
         "include": "solo, anthro",
         "exclude": "feral, gore, text",
@@ -104,7 +104,7 @@ DEFAULT_PRESETS: dict[str, dict[str, Any]] = {
         "artist_weight": 1.1,
         "max_general_tags": 25,
     },
-    "🌟 AI Prompt Explorer (AIBooru)": {
+    "AI Prompt Explorer (AIBooru)": {
         "site": SITE_AIBOORU,
         "include": "masterpiece, 1girl",
         "exclude": "bad quality, watermark, signature",
@@ -119,7 +119,7 @@ DEFAULT_PRESETS: dict[str, dict[str, Any]] = {
         "artist_weight": 1.1,
         "max_general_tags": 30,
     },
-    "🎲 True Random Chaos": {
+    "True Random Chaos": {
         "site": SITE_SAFEBOORU,
         "include": "",
         "exclude": "watermark, text, lowres",
