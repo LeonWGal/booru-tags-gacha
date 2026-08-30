@@ -45,11 +45,7 @@ def _parse_xml_to_dict(xml_str: str) -> dict[str, Any]:
 class GelbooruClient(BooruClient):
     """Modern JSON & XML DAPI client for Gelbooru, Rule34, Safebooru, TBIB, etc."""
 
-    _USER_AGENT = (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 "
-        "BooruTagsGacha/2.0"
-    )
+    _USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
     _TIMEOUT_SECONDS = 15
     _MAX_RETRIES = 2
     _RETRY_BACKOFF = 1.0
@@ -118,26 +114,32 @@ class GelbooruClient(BooruClient):
         count_payload = await self._request(count_params)
         count = self._extract_count(count_payload)
 
-        # 2. Fetch random post using pid offset
+        # 2. Fetch random post using safe pid page offset
+        limit = 20
         page_params = dict(count_params)
+        page_params["limit"] = limit
         page_params["json"] = 1
 
-        if count > 1:
-            max_offset = min(count - 1, 20000)
-            page_params["pid"] = randint(0, max_offset)
-            page_params["limit"] = 1
+        if count > limit:
+            max_pid = min(max(0, (count // limit) - 1), 100)
+            page_params["pid"] = randint(0, max_pid)
         else:
             page_params["pid"] = 0
-            page_params["limit"] = 20
 
         post_payload = await self._request(page_params)
         raw_post = self._extract_first_post(post_payload)
 
         if not raw_post:
-            # Fallback without json parameter (XML)
+            # Fallback without json parameter (XML format)
             del page_params["json"]
             xml_payload = await self._request(page_params)
             raw_post = self._extract_first_post(xml_payload)
+
+        if not raw_post and page_params.get("pid", 0) > 0:
+            # Fallback to page 0 if deep page was empty
+            page_params["pid"] = 0
+            post_payload = await self._request(page_params)
+            raw_post = self._extract_first_post(post_payload)
 
         if not raw_post:
             return None
@@ -165,25 +167,30 @@ class GelbooruClient(BooruClient):
         return 0
 
     def _extract_first_post(self, payload: Any) -> dict[str, Any] | None:
+        import random
         if isinstance(payload, list) and payload:
-            return payload[0] if isinstance(payload[0], dict) else None
+            valid = [p for p in payload if isinstance(p, dict) and p.get("id")]
+            return random.choice(valid) if valid else None
         if isinstance(payload, dict):
             if "post" in payload:
                 posts = payload["post"]
                 if isinstance(posts, list) and posts:
-                    return posts[0]
-                if isinstance(posts, dict):
+                    valid = [p for p in posts if isinstance(p, dict) and p.get("id")]
+                    return random.choice(valid) if valid else None
+                if isinstance(posts, dict) and posts.get("id"):
                     return posts
             if "posts" in payload:
                 posts = payload["posts"].get("post")
                 if isinstance(posts, list) and posts:
-                    return posts[0]
-                if isinstance(posts, dict):
+                    valid = [p for p in posts if isinstance(p, dict) and p.get("id")]
+                    return random.choice(valid) if valid else None
+                if isinstance(posts, dict) and posts.get("id"):
                     return posts
         return None
 
     async def _to_post(self, raw: dict[str, Any]) -> BooruPost:
         raw = {k.lstrip('@'): v for k, v in raw.items()}
+        post_id = str(raw.get("id", ""))
         web_base = self._base_url.replace("api.rule34.xxx", "rule34.xxx").rstrip('/')
         post_url = f"{web_base}/index.php?page=post&s=view&id={post_id}"
 

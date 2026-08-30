@@ -96,7 +96,7 @@ async def _lookup_danbooru_batch(tags: list[str]) -> None:
             "User-Agent": "BooruTagsGacha/2.1 (TagClassifier; Stable Diffusion WebUI extension)",
             "Accept": "application/json",
         }
-        timeout = aiohttp.ClientTimeout(total=10)
+        timeout = aiohttp.ClientTimeout(total=3)
         async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
             async with session.get(url, params=params) as resp:
                 if resp.status == 200:
@@ -137,7 +137,7 @@ async def _lookup_gelbooru_dapi(
             "User-Agent": "BooruTagsGacha/2.1 (TagClassifier; Stable Diffusion WebUI extension)",
             "Accept": "application/json",
         }
-        timeout = aiohttp.ClientTimeout(total=10)
+        timeout = aiohttp.ClientTimeout(total=3)
         async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
             async with session.get(url, params=params) as resp:
                 if resp.status == 200:
@@ -163,7 +163,7 @@ async def _lookup_moebooru_tag(tags: list[str], base_url: str) -> None:
             "User-Agent": "BooruTagsGacha/2.1 (TagClassifier; Stable Diffusion WebUI extension)",
             "Accept": "application/json",
         }
-        timeout = aiohttp.ClientTimeout(total=10)
+        timeout = aiohttp.ClientTimeout(total=3)
         async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
             async with session.get(url, params=params) as resp:
                 if resp.status == 200:

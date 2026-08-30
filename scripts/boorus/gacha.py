@@ -71,8 +71,8 @@ class GachaPullResult:
         self.site_name = SITE_LABEL_BY_KEY.get(site, site.capitalize())
 
     def get_gallery_caption(self) -> str:
-        artist = ", ".join(self.post.tags_artist) if self.post.tags_artist else f"#{self.post.id}"
-        return f"[{self.badge}] Score: {self.post.score} | {artist}"
+        artist = self.post.tags_artist[0].replace('_', ' ') if self.post.tags_artist else f"#{self.post.id}"
+        return f"{self.badge} • {artist}"
 
     def to_summary_html(self) -> str:
         """Generates a clean HUD status bar with post metadata."""
@@ -111,40 +111,40 @@ class GachaPullResult:
 
         # Artists
         if self.post.tags_artist:
-            chips = "".join(f'<span class="gacha-chip gacha-chip-artist">{t}</span>' for t in self.post.tags_artist)
+            chips = "".join(f'<span class="gacha-chip gacha-chip-artist" title="{t}">{t.replace("_", " ")}</span>' for t in self.post.tags_artist)
             groups.append(f"""
             <div class="gacha-tag-group">
-                <span class="gacha-tag-group-label">Artists ({len(self.post.tags_artist)})</span>
+                <span class="gacha-tag-group-label gacha-label-artist">Artists ({len(self.post.tags_artist)})</span>
                 <div class="gacha-tag-group-items">{chips}</div>
             </div>
             """)
 
         # Characters
         if self.post.tags_character:
-            chips = "".join(f'<span class="gacha-chip gacha-chip-character">{t}</span>' for t in self.post.tags_character)
+            chips = "".join(f'<span class="gacha-chip gacha-chip-character" title="{t}">{t.replace("_", " ")}</span>' for t in self.post.tags_character)
             groups.append(f"""
             <div class="gacha-tag-group">
-                <span class="gacha-tag-group-label">Characters ({len(self.post.tags_character)})</span>
+                <span class="gacha-tag-group-label gacha-label-character">Characters ({len(self.post.tags_character)})</span>
                 <div class="gacha-tag-group-items">{chips}</div>
             </div>
             """)
 
         # Copyright / Series
         if self.post.tags_copyright:
-            chips = "".join(f'<span class="gacha-chip gacha-chip-copyright">{t}</span>' for t in self.post.tags_copyright)
+            chips = "".join(f'<span class="gacha-chip gacha-chip-copyright" title="{t}">{t.replace("_", " ")}</span>' for t in self.post.tags_copyright)
             groups.append(f"""
             <div class="gacha-tag-group">
-                <span class="gacha-tag-group-label">Series ({len(self.post.tags_copyright)})</span>
+                <span class="gacha-tag-group-label gacha-label-copyright">Series ({len(self.post.tags_copyright)})</span>
                 <div class="gacha-tag-group-items">{chips}</div>
             </div>
             """)
 
         # Meta Tags
         if self.post.tags_meta:
-            chips = "".join(f'<span class="gacha-chip gacha-chip-meta">{t}</span>' for t in self.post.tags_meta)
+            chips = "".join(f'<span class="gacha-chip gacha-chip-meta" title="{t}">{t.replace("_", " ")}</span>' for t in self.post.tags_meta)
             groups.append(f"""
             <div class="gacha-tag-group">
-                <span class="gacha-tag-group-label">Meta ({len(self.post.tags_meta)})</span>
+                <span class="gacha-tag-group-label gacha-label-meta">Meta ({len(self.post.tags_meta)})</span>
                 <div class="gacha-tag-group-items">{chips}</div>
             </div>
             """)

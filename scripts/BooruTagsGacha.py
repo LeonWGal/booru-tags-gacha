@@ -142,10 +142,10 @@ class BooruTagsGachaScript(scripts.Script):
                     preview_image = gr.Image(
                         label="Selected Preview",
                         interactive=False,
-                        height=360,
+                        height=380,
                         show_label=False,
-                        show_download_button=True,
-                        show_share_button=True,
+                        show_download_button=False,
+                        show_share_button=False,
                         elem_classes=["gacha-preview-image"],
                     )
                 with gr.Column(scale=2, min_width=300, elem_classes=["gacha-gallery-col"]):
@@ -156,12 +156,12 @@ class BooruTagsGachaScript(scripts.Script):
                         elem_classes=["gacha-gallery-grid"],
                         columns=[2, 3, 5],
                         rows=[1, 2],
-                        height=360,
-                        object_fit="cover",
+                        height=380,
+                        object_fit="contain",
                         preview=False,
                         allow_preview=False,
-                        show_download_button=True,
-                        show_share_button=True,
+                        show_download_button=False,
+                        show_share_button=False,
                     )
 
             # Categorized Tag Chips Inspector

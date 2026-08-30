@@ -17,11 +17,7 @@ from .base import (
 class DanbooruClient(BooruClient):
     """Client for Danbooru and Danbooru-compatible engines."""
 
-    _USER_AGENT = (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 "
-        "BooruTagsGacha/2.0"
-    )
+    _USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
     _TIMEOUT_SECONDS = 20
     _MAX_RETRIES = 3
     _RETRY_BACKOFF = 1.5
@@ -207,7 +203,15 @@ class DanbooruClient(BooruClient):
         timeout = aiohttp.ClientTimeout(total=self._TIMEOUT_SECONDS)
         headers = {
             "User-Agent": self._USER_AGENT,
-            "Accept": "application/json",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": "https://danbooru.donmai.us/",
+            "Sec-Ch-Ua": '"Chromium";v="133", "Not(A:Brand";v="99"',
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"',
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin",
         }
         
         req_params = dict(params or {})
@@ -223,12 +227,15 @@ class DanbooruClient(BooruClient):
                 async with aiohttp.ClientSession(loop=self._loop, timeout=timeout, headers=headers) as session:
                     async with session.get(self._base_url + path, params=req_params) as response:
                         status_code = response.status
-                        if response.content_type == "application/json":
-                            data = await response.json()
-                        else:
-                            text = await response.text()
-                            if status_code == 200:
+                        text = await response.text()
+                        if status_code in (200, 201):
+                            try:
+                                import json
+                                data = json.loads(text)
+                            except Exception:
                                 data = text
+                        elif status_code == 404:
+                            data = []
                 break
             except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as exc:
                 if attempt < self._MAX_RETRIES:
@@ -239,14 +246,14 @@ class DanbooruClient(BooruClient):
                 ) from exc
 
         if status_code == 404:
-            return {}
+            return []
         if status_code == 401:
             raise BooruAuthException("Danbooru returned 401 Unauthorized — check username and API key.")
         if status_code == 403:
-            raise BooruException("Danbooru 403: Cloudflare check or access denied. Try again or check credentials.")
+            raise BooruException("Danbooru 403: Cloudflare check or access denied.")
         if status_code == 422:
-            return {}
-        if status_code not in (200, 201):
+            return []
+        if status_code not in (200, 201) and status_code is not None:
             raise BooruException(f"Danbooru returned status {status_code}")
 
         return data

@@ -17,11 +17,7 @@ from .classifier import classify_tags
 class MoebooruClient(BooruClient):
     """Client for Moebooru engines (yande.re, konachan)."""
 
-    _USER_AGENT = (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 "
-        "BooruTagsGacha/2.0"
-    )
+    _USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
     _TIMEOUT_SECONDS = 20
     _MAX_RETRIES = 3
     _RETRY_BACKOFF = 1.5
@@ -48,6 +44,7 @@ class MoebooruClient(BooruClient):
         rating: str | None = None,
         min_score: int = 0,
     ) -> BooruPost | None:
+        import random
         include = [normalize_tag(t) for t in (tags or []) if t.strip()]
         excluded = [f"-{normalize_tag(t)}" for t in (exclude_tags or []) if t.strip()]
 
@@ -64,14 +61,18 @@ class MoebooruClient(BooruClient):
 
         params = {
             "tags": ' '.join(query_terms),
-            "limit": 1,
+            "limit": 20,
         }
 
         data = await self._request("/post.json", params)
         if not isinstance(data, list) or not data:
             return None
 
-        raw = data[0]
+        valid_posts = [p for p in data if isinstance(p, dict) and p.get("id")]
+        if not valid_posts:
+            return None
+
+        raw = random.choice(valid_posts)
         return await self._to_post(raw)
 
     async def _to_post(self, raw: dict[str, Any]) -> BooruPost:
@@ -80,8 +81,8 @@ class MoebooruClient(BooruClient):
         preview_url = raw.get("preview_url") or raw.get("sample_url") or file_url
         sample_url = raw.get("sample_url") or raw.get("jpeg_url") or file_url
 
-        tags_str = str(raw.get("tags") or "").strip()
-        all_tags = tags_str.split() if tags_str else []
+        tags_str = html.unescape(str(raw.get("tags") or "")).strip()
+        all_tags = [html.unescape(t) for t in tags_str.split()] if tags_str else []
 
         raw_rating = raw.get("rating", "s")
         rating_map = {"s": "safe", "q": "questionable", "e": "explicit"}
@@ -135,12 +136,15 @@ class MoebooruClient(BooruClient):
                 async with aiohttp.ClientSession(loop=self._loop, timeout=timeout, headers=headers) as session:
                     async with session.get(self._base_url + path, params=params) as response:
                         status_code = response.status
-                        if response.content_type == "application/json":
-                            data = await response.json()
-                        else:
-                            text = await response.text()
-                            if status_code == 200:
+                        text = await response.text()
+                        if status_code in (200, 201):
+                            try:
+                                import json
+                                data = json.loads(text)
+                            except Exception:
                                 data = text
+                        elif status_code == 404:
+                            data = []
                 break
             except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as exc:
                 if attempt < self._MAX_RETRIES:
@@ -150,7 +154,7 @@ class MoebooruClient(BooruClient):
 
         if status_code == 404:
             return []
-        if status_code not in (200, 201):
+        if status_code not in (200, 201) and status_code is not None:
             raise BooruException(f"Moebooru returned status {status_code}")
 
         return data
