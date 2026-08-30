@@ -1,8 +1,8 @@
 {
-  "Anime Solo Girl": {
+  "Character (1girl)": {
     "site": "danbooru",
     "include": "1girl, solo",
-    "exclude": "censored, text, watermark, bad anatomy",
+    "exclude": "censored, text, watermark, bad anatomy, lowres",
     "rating": "safe",
     "min_score": 20,
     "include_general": true,
@@ -14,41 +14,26 @@
     "artist_weight": 1.1,
     "max_general_tags": 25
   },
-  "Pony & Illustrious Anime": {
+  "Scenery (No Humans)": {
     "site": "danbooru",
-    "include": "score_9, score_8_up, score_7_up, source_anime, 1girl",
-    "exclude": "censored, bad quality, worst quality, text, watermark",
+    "include": "scenery, no_humans, landscape",
+    "exclude": "1girl, 1boy, character, text, watermark, lowres",
     "rating": "safe",
-    "min_score": 35,
+    "min_score": 15,
     "include_general": true,
-    "include_character": true,
+    "include_character": false,
     "include_copyright": true,
     "include_artist": true,
     "include_meta": false,
     "artist_format": "raw",
-    "artist_weight": 1.0,
-    "max_general_tags": 20
+    "artist_weight": 1.1,
+    "max_general_tags": 30
   },
-  "Masterpiece Artists": {
-    "site": "yande",
-    "include": "solo",
-    "exclude": "bad art, text, logo, lowres",
-    "rating": "safe",
-    "min_score": 30,
-    "include_general": true,
-    "include_character": true,
-    "include_copyright": true,
-    "include_artist": true,
-    "include_meta": false,
-    "artist_format": "by",
-    "artist_weight": 1.15,
-    "max_general_tags": 20
-  },
-  "Cyberpunk & Neon": {
-    "site": "danbooru",
-    "include": "cyberpunk, neon, cityscape",
-    "exclude": "monochrome, blurry, text",
-    "rating": "safe",
+  "NSFW (Explicit)": {
+    "site": "gelbooru",
+    "include": "1girl, solo",
+    "exclude": "censored, text, watermark, bad anatomy",
+    "rating": "explicit",
     "min_score": 15,
     "include_general": true,
     "include_character": true,
@@ -59,70 +44,10 @@
     "artist_weight": 1.1,
     "max_general_tags": 25
   },
-  "Fantasy Scenery": {
-    "site": "gelbooru",
-    "include": "scenery, landscape, fantasy",
-    "exclude": "monochrome, sketch, comic",
-    "rating": "safe",
-    "min_score": 10,
-    "include_general": true,
-    "include_character": false,
-    "include_copyright": true,
-    "include_artist": true,
-    "include_meta": false,
-    "artist_format": "raw",
-    "artist_weight": 1.1,
-    "max_general_tags": 30
-  },
-  "Mecha & Sci-Fi": {
+  "Empty": {
     "site": "danbooru",
-    "include": "mecha, robot, sci-fi",
-    "exclude": "chibi, lowres",
-    "rating": "safe",
-    "min_score": 10,
-    "include_general": true,
-    "include_character": true,
-    "include_copyright": true,
-    "include_artist": true,
-    "include_meta": false,
-    "artist_format": "raw",
-    "artist_weight": 1.1,
-    "max_general_tags": 25
-  },
-  "Anthropomorphic (e621)": {
-    "site": "e621",
-    "include": "solo, anthro",
-    "exclude": "feral, gore, text",
-    "rating": "safe",
-    "min_score": 20,
-    "include_general": true,
-    "include_character": true,
-    "include_copyright": true,
-    "include_artist": true,
-    "include_meta": false,
-    "artist_format": "raw",
-    "artist_weight": 1.1,
-    "max_general_tags": 25
-  },
-  "AI Prompt Explorer (AIBooru)": {
-    "site": "aibooru",
-    "include": "masterpiece, 1girl",
-    "exclude": "bad quality, watermark, signature",
-    "rating": "any",
-    "min_score": 0,
-    "include_general": true,
-    "include_character": true,
-    "include_copyright": true,
-    "include_artist": true,
-    "include_meta": false,
-    "artist_format": "raw",
-    "artist_weight": 1.1,
-    "max_general_tags": 30
-  },
-  "True Random Chaos": {
-    "site": "safebooru",
     "include": "",
-    "exclude": "watermark, text, lowres",
+    "exclude": "",
     "rating": "safe",
     "min_score": 0,
     "include_general": true,
@@ -131,7 +56,7 @@
     "include_artist": true,
     "include_meta": false,
     "artist_format": "raw",
-    "artist_weight": 1.1,
+    "artist_weight": 1.0,
     "max_general_tags": 25
   }
 }

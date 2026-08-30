@@ -68,7 +68,7 @@ class BooruTagsGachaScript(scripts.Script):
     def ui(self, is_img2img):
         mode = "img2img" if is_img2img else "txt2img"
         all_preset_names = presets.get_preset_names()
-        default_preset_name = all_preset_names[0] if all_preset_names else "Anime Solo Girl"
+        default_preset_name = all_preset_names[0] if all_preset_names else "Character (1girl)"
         current_preset = presets.get_preset(default_preset_name)
 
         # Internal state for multi-card gacha and history
