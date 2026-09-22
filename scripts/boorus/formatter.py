@@ -37,6 +37,8 @@ class TagFormatConfig:
         suffix: str = "",
         tag_separator: str = ", ",
         blacklist: list[str] | None = None,
+        strip_tags: list[str] | str | None = None,
+        strip_tags_enable: bool = True,
         emoticon_exclusions: set[str] | None = None,
     ):
         self.include_general = include_general
@@ -55,7 +57,14 @@ class TagFormatConfig:
         self.prefix = prefix
         self.suffix = suffix
         self.tag_separator = tag_separator
-        self.blacklist = {normalize_tag(t) for t in (blacklist or []) if t.strip()}
+
+        bl_items = list(blacklist or [])
+        if strip_tags_enable and strip_tags:
+            st_items = strip_tags.split(',') if isinstance(strip_tags, str) else list(strip_tags)
+            bl_items.extend(st_items)
+        self.blacklist = {normalize_tag(t) for t in bl_items if t and normalize_tag(t)}
+        self.strip_tags = strip_tags or ""
+        self.strip_tags_enable = strip_tags_enable
         self.emoticon_exclusions = emoticon_exclusions or DEFAULT_EMOTICON_EXCLUSIONS
 
     @classmethod
@@ -110,10 +119,30 @@ class TagFormatter:
 
     @classmethod
     def filter_blacklist(cls, tags: list[str], config: TagFormatConfig) -> list[str]:
-        """Removes tags present in the blacklist."""
+        """Removes tags present in the blacklist or matching strip tag patterns."""
         if not config.blacklist:
             return tags
-        return [t for t in tags if normalize_tag(t) not in config.blacklist]
+
+        def is_blocked(tag: str) -> bool:
+            norm = normalize_tag(tag)
+            if not norm:
+                return True
+            if norm in config.blacklist:
+                return True
+            for b in config.blacklist:
+                if not b:
+                    continue
+                if b == norm:
+                    return True
+                if b in ("watermark", "censored", "censor", "ai_generated") and (b in norm or (b == "censored" and "censor" in norm)):
+                    return True
+                if "*" in b:
+                    import fnmatch
+                    if fnmatch.fnmatch(norm, b):
+                        return True
+            return False
+
+        return [t for t in tags if not is_blocked(t)]
 
     @classmethod
     def format_artist_tags(cls, artists: list[str], config: TagFormatConfig) -> list[str]:
@@ -339,3 +368,15 @@ class TagFormatter:
             updated = re.sub(r'\s+', ' ', updated).strip()
 
         return updated, replaced_any
+
+    @classmethod
+    def strip_prompt_text(cls, prompt: str, config: TagFormatConfig) -> str:
+        """Filters out any tags matching blacklist or strip tags from a comma-separated prompt string."""
+        if not prompt or not config.blacklist:
+            return prompt
+        parts = [p.strip() for p in prompt.split(",")]
+        kept = cls.filter_blacklist(parts, config)
+        cleaned = ", ".join(k for k in kept if k)
+        cleaned = re.sub(r',\s*,+', ', ', cleaned)
+        return cleaned.strip(', ')
+

@@ -4,7 +4,7 @@
     "rating": "explicit",
     "min_score": 20,
     "include": "",
-    "exclude": "censored, loli, shota",
+    "exclude": "loli, shota, ai_generated",
     "include_general": true,
     "include_character": true,
     "include_copyright": true,
@@ -12,14 +12,16 @@
     "include_meta": false,
     "artist_format": "raw",
     "artist_weight": 1.1,
-    "max_general_tags": 25
+    "max_general_tags": 25,
+    "strip_tags": "text, censored, watermark",
+    "strip_tags_enable": true
   },
   "Scenery (No Humans)": {
     "site": "danbooru",
     "rating": "safe",
     "min_score": 15,
     "include": "scenery, no_humans, landscape",
-    "exclude": "1girl, 1boy, character, text, watermark, lowres",
+    "exclude": "1girl, 1boy, character, loli, shota, ai_generated, lowres",
     "include_general": true,
     "include_character": false,
     "include_copyright": true,
@@ -27,14 +29,16 @@
     "include_meta": false,
     "artist_format": "raw",
     "artist_weight": 1.1,
-    "max_general_tags": 30
+    "max_general_tags": 30,
+    "strip_tags": "text, censored, watermark",
+    "strip_tags_enable": true
   },
   "NSFW (Explicit)": {
     "site": "gelbooru",
     "rating": "explicit",
     "min_score": 15,
-    "include": "butt plug, ",
-    "exclude": "ai generated",
+    "include": "",
+    "exclude": "loli, shota, ai_generated",
     "include_general": true,
     "include_character": true,
     "include_copyright": true,
@@ -42,14 +46,16 @@
     "include_meta": false,
     "artist_format": "raw",
     "artist_weight": 1.1,
-    "max_general_tags": 25
+    "max_general_tags": 25,
+    "strip_tags": "text, censored, watermark",
+    "strip_tags_enable": true
   },
   "Empty": {
     "site": "danbooru",
     "rating": "safe",
     "min_score": 0,
     "include": "",
-    "exclude": "",
+    "exclude": "loli, shota, ai_generated",
     "include_general": true,
     "include_character": true,
     "include_copyright": true,
@@ -57,6 +63,8 @@
     "include_meta": false,
     "artist_format": "raw",
     "artist_weight": 1.0,
-    "max_general_tags": 25
+    "max_general_tags": 25,
+    "strip_tags": "text, censored, watermark",
+    "strip_tags_enable": true
   }
 }

@@ -258,6 +258,19 @@ class BooruTagsGachaScript(scripts.Script):
                     tag_prefix_box = gr.Textbox(label="Prompt Prefix", placeholder="e.g. masterpiece, best quality,")
                     tag_suffix_box = gr.Textbox(label="Prompt Suffix", placeholder="e.g. highres, absurdres")
 
+                with gr.Row():
+                    strip_tags_box = gr.Textbox(
+                        label="Strip Tags from Prompt",
+                        placeholder="e.g. text, censored, watermark",
+                        value=current_preset.get("strip_tags", "text, censored, watermark"),
+                        scale=3,
+                    )
+                    strip_tags_chk = gr.Checkbox(
+                        label="Enable Tag Stripping",
+                        value=current_preset.get("strip_tags_enable", True),
+                        scale=1,
+                    )
+
             # Collapsible Auto-Gacha on Generate
             with gr.Accordion("Auto-Gacha on Generate", open=False):
                 gr.Markdown(
@@ -282,7 +295,8 @@ class BooruTagsGachaScript(scripts.Script):
         # Helper to construct TagFormatConfig from UI values
         def _get_format_config(
             inc_gen, inc_char, inc_copy, inc_art, inc_meta,
-            rep_under, esc_par, art_fmt, art_wt, max_tags, prefix, suffix
+            rep_under, esc_par, art_fmt, art_wt, max_tags, prefix, suffix,
+            strip_tags="text, censored, watermark", strip_tags_enable=True
         ):
             blacklist_raw = getattr(shared.opts, "gpr_universalBlacklist", "") or ""
             bl_list = [t.strip() for t in blacklist_raw.split(',') if t.strip()]
@@ -300,6 +314,8 @@ class BooruTagsGachaScript(scripts.Script):
                 prefix=prefix,
                 suffix=suffix,
                 blacklist=bl_list,
+                strip_tags=strip_tags,
+                strip_tags_enable=bool(strip_tags_enable),
             )
 
         # Event: Preset Selection Change
@@ -321,6 +337,8 @@ class BooruTagsGachaScript(scripts.Script):
                 p.get("artist_format", "raw"),
                 p.get("artist_weight", 1.1),
                 p.get("max_general_tags", 25),
+                p.get("strip_tags", "text, censored, watermark"),
+                p.get("strip_tags_enable", True),
             )
 
         preset_dropdown.change(
@@ -331,6 +349,7 @@ class BooruTagsGachaScript(scripts.Script):
                 include_tags_box, exclude_tags_box,
                 inc_general_chk, inc_char_chk, inc_copy_chk, inc_artist_chk, inc_meta_chk,
                 artist_fmt_dropdown, artist_weight_slider, max_tags_slider,
+                strip_tags_box, strip_tags_chk,
             ],
             show_progress="hidden",
         )
@@ -339,7 +358,7 @@ class BooruTagsGachaScript(scripts.Script):
         def _auto_save_active(
             preset_name, site_lbl, rating_val, score_val, inc_val, exc_val,
             inc_gen, inc_char, inc_copy, inc_art, inc_meta,
-            art_fmt, art_wt, max_tags
+            art_fmt, art_wt, max_tags, strip_tags="text, censored, watermark", strip_tags_enable=True
         ):
             if not preset_name:
                 return
@@ -358,6 +377,8 @@ class BooruTagsGachaScript(scripts.Script):
                 "artist_format": art_fmt or "raw",
                 "artist_weight": float(art_wt) if art_wt is not None else 1.1,
                 "max_general_tags": int(max_tags) if max_tags is not None else 25,
+                "strip_tags": strip_tags or "",
+                "strip_tags_enable": bool(strip_tags_enable),
             }
             presets.auto_save_preset(preset_name, data)
 
@@ -366,6 +387,7 @@ class BooruTagsGachaScript(scripts.Script):
             include_tags_box, exclude_tags_box,
             inc_general_chk, inc_char_chk, inc_copy_chk, inc_artist_chk, inc_meta_chk,
             artist_fmt_dropdown, artist_weight_slider, max_tags_slider,
+            strip_tags_box, strip_tags_chk,
         ]
 
         include_tags_box.blur(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
@@ -381,17 +403,19 @@ class BooruTagsGachaScript(scripts.Script):
         artist_fmt_dropdown.change(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
         artist_weight_slider.change(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
         max_tags_slider.change(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
+        strip_tags_box.blur(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
+        strip_tags_chk.change(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
 
         # Event: Save Preset
         def _on_save_preset(
             preset_name, site_lbl, rating_val, score_val, inc_val, exc_val,
             inc_gen, inc_char, inc_copy, inc_art, inc_meta,
-            art_fmt, art_wt, max_tags
+            art_fmt, art_wt, max_tags, strip_tags, strip_tags_enable
         ):
             _auto_save_active(
                 preset_name, site_lbl, rating_val, score_val, inc_val, exc_val,
                 inc_gen, inc_char, inc_copy, inc_art, inc_meta,
-                art_fmt, art_wt, max_tags
+                art_fmt, art_wt, max_tags, strip_tags, strip_tags_enable
             )
             all_names = presets.get_preset_names()
             gr.Info(f"Preset '{preset_name}' saved")
@@ -404,6 +428,7 @@ class BooruTagsGachaScript(scripts.Script):
                 include_tags_box, exclude_tags_box,
                 inc_general_chk, inc_char_chk, inc_copy_chk, inc_artist_chk, inc_meta_chk,
                 artist_fmt_dropdown, artist_weight_slider, max_tags_slider,
+                strip_tags_box, strip_tags_chk,
             ],
             outputs=[preset_dropdown],
         )
@@ -442,19 +467,21 @@ class BooruTagsGachaScript(scripts.Script):
             count, preset_name, site_lbl, rating_val, min_score_val, inc_tags, exc_tags,
             inc_gen, inc_char, inc_copy, inc_art, inc_meta,
             rep_under, esc_par, art_fmt, art_wt, max_tags, prefix, suffix,
+            strip_tags, strip_tags_enable,
             history, history_idx,
         ):
             # Auto-save current preset state on roll
             _auto_save_active(
                 preset_name, site_lbl, rating_val, min_score_val, inc_tags, exc_tags,
                 inc_gen, inc_char, inc_copy, inc_art, inc_meta,
-                art_fmt, art_wt, max_tags
+                art_fmt, art_wt, max_tags, strip_tags, strip_tags_enable
             )
 
             site_key = SITE_KEY_BY_LABEL.get(site_lbl, DEFAULT_SITE)
             fmt_config = _get_format_config(
                 inc_gen, inc_char, inc_copy, inc_art, inc_meta,
-                rep_under, esc_par, art_fmt, art_wt, max_tags, prefix, suffix
+                rep_under, esc_par, art_fmt, art_wt, max_tags, prefix, suffix,
+                strip_tags, strip_tags_enable
             )
 
             results: list[GachaPullResult] = await pull_gacha(
@@ -535,6 +562,7 @@ class BooruTagsGachaScript(scripts.Script):
             inc_general_chk, inc_char_chk, inc_copy_chk, inc_artist_chk, inc_meta_chk,
             replace_underscores_chk, escape_parens_chk, artist_fmt_dropdown, artist_weight_slider,
             max_tags_slider, tag_prefix_box, tag_suffix_box,
+            strip_tags_box, strip_tags_chk,
             history_state, history_idx_state,
         ]
         pull_outputs = [
@@ -749,30 +777,50 @@ class BooruTagsGachaScript(scripts.Script):
         target_neg_prompt = self.img2img_neg_prompt if is_img2img else self.txt2img_neg_prompt
 
         with contextlib.suppress(AttributeError):
+            def _transfer_append(res, cur, strip_tags, strip_tags_enable):
+                text = f"{cur}, {res}".strip(", ") if cur else res
+                if strip_tags_enable and strip_tags:
+                    cfg = TagFormatConfig(strip_tags=strip_tags, strip_tags_enable=strip_tags_enable)
+                    text = TagFormatter.strip_prompt_text(text, cfg)
+                return text
+
+            def _transfer_replace(res, strip_tags, strip_tags_enable):
+                if strip_tags_enable and strip_tags:
+                    cfg = TagFormatConfig(strip_tags=strip_tags, strip_tags_enable=strip_tags_enable)
+                    return TagFormatter.strip_prompt_text(res, cfg)
+                return res
+
+            def _transfer_prepend(res, cur, strip_tags, strip_tags_enable):
+                text = f"{res}, {cur}".strip(", ") if cur else res
+                if strip_tags_enable and strip_tags:
+                    cfg = TagFormatConfig(strip_tags=strip_tags, strip_tags_enable=strip_tags_enable)
+                    text = TagFormatter.strip_prompt_text(text, cfg)
+                return text
+
             if target_prompt is not None:
                 append_prompt_btn.click(
-                    fn=lambda res, cur: f"{cur}, {res}".strip(", ") if cur else res,
-                    inputs=[full_tags_textbox, target_prompt],
+                    fn=_transfer_append,
+                    inputs=[full_tags_textbox, target_prompt, strip_tags_box, strip_tags_chk],
                     outputs=[target_prompt],
                 )
                 replace_prompt_btn.click(
-                    fn=lambda res: res,
-                    inputs=[full_tags_textbox],
+                    fn=_transfer_replace,
+                    inputs=[full_tags_textbox, strip_tags_box, strip_tags_chk],
                     outputs=[target_prompt],
                 )
                 prepend_prompt_btn.click(
-                    fn=lambda res, cur: f"{res}, {cur}".strip(", ") if cur else res,
-                    inputs=[full_tags_textbox, target_prompt],
+                    fn=_transfer_prepend,
+                    inputs=[full_tags_textbox, target_prompt, strip_tags_box, strip_tags_chk],
                     outputs=[target_prompt],
                 )
                 insert_artist_btn.click(
-                    fn=lambda res, cur: f"{cur}, {res}".strip(", ") if cur else res,
-                    inputs=[artist_tags_box, target_prompt],
+                    fn=_transfer_append,
+                    inputs=[artist_tags_box, target_prompt, strip_tags_box, strip_tags_chk],
                     outputs=[target_prompt],
                 )
                 insert_character_btn.click(
-                    fn=lambda res, cur: f"{cur}, {res}".strip(", ") if cur else res,
-                    inputs=[character_tags_box, target_prompt],
+                    fn=_transfer_append,
+                    inputs=[character_tags_box, target_prompt, strip_tags_box, strip_tags_chk],
                     outputs=[target_prompt],
                 )
 
@@ -790,6 +838,7 @@ class BooruTagsGachaScript(scripts.Script):
             inc_general_chk, inc_char_chk, inc_copy_chk, inc_artist_chk, inc_meta_chk,
             replace_underscores_chk, escape_parens_chk, artist_fmt_dropdown, artist_weight_slider,
             max_tags_slider, tag_prefix_box, tag_suffix_box,
+            strip_tags_box, strip_tags_chk,
         ]
 
     def after_component(self, component, **kwargs):
@@ -826,6 +875,8 @@ class BooruTagsGachaScript(scripts.Script):
         max_tags,
         prefix,
         suffix,
+        strip_tags_box=None,
+        strip_tags_chk=None,
         *args
     ):
         """Auto-Gacha process hook: replaces placeholders or auto-injects tags into prompt per generation."""
@@ -879,6 +930,9 @@ class BooruTagsGachaScript(scripts.Script):
         prefix = str(prefix or "").strip()
         suffix = str(suffix or "").strip()
 
+        strip_tags_str = str(strip_tags_box if strip_tags_box is not None else getattr(shared.opts, "gpr_strip_tags", "text, censored, watermark"))
+        strip_tags_enabled = bool(strip_tags_chk if strip_tags_chk is not None else getattr(shared.opts, "gpr_strip_tags_enable", True))
+
         blacklist_raw = getattr(shared.opts, "gpr_universalBlacklist", "") or ""
         bl_list = [t.strip() for t in blacklist_raw.split(',') if t.strip()]
 
@@ -896,6 +950,8 @@ class BooruTagsGachaScript(scripts.Script):
             prefix=prefix,
             suffix=suffix,
             blacklist=bl_list,
+            strip_tags=strip_tags_str,
+            strip_tags_enable=strip_tags_enabled,
         )
 
         batch_size = max(getattr(p, "batch_size", 1) or 1, 1)
@@ -953,6 +1009,9 @@ class BooruTagsGachaScript(scripts.Script):
                     updated_prompt = tag_string
                 elif auto_mode_dropdown == "Replace [gacha...] placeholders":
                     updated_prompt = f"{cur_prompt}, {tag_string}".strip(", ")
+
+            if fmt_config.strip_tags_enable and fmt_config.blacklist:
+                updated_prompt = TagFormatter.strip_prompt_text(updated_prompt, fmt_config)
 
             all_prompts[idx] = updated_prompt
 
@@ -1049,10 +1108,20 @@ def on_ui_settings():
         "gpr_custom_api_key": shared.OptionInfo("", "Custom Booru API Key", gr.Textbox),
         "gpr_custom_user_id": shared.OptionInfo("", "Custom Booru User ID / Username", gr.Textbox),
         "gpr_universalBlacklist": shared.OptionInfo(
-            "",
+            "loli, shota, ai_generated",
             "Universal Tag Blacklist",
             gr.Textbox,
-        ).info("Comma-separated tags to always exclude from all rolls (e.g. nsfw, watermark, logo, bad anatomy)."),
+        ).info("Comma-separated tags to always exclude from booru search rolls."),
+        "gpr_strip_tags": shared.OptionInfo(
+            "text, censored, watermark",
+            "Tags to Strip from Prompt",
+            gr.Textbox,
+        ).info("Comma-separated tags to strip from prompts during generation or prompt transfer."),
+        "gpr_strip_tags_enable": shared.OptionInfo(
+            True,
+            "Enable Tag Stripping from Prompt",
+            gr.Checkbox,
+        ),
     }
 
     for key, opt in gpr_options.items():
