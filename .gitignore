@@ -17,8 +17,12 @@ env/
 .idea/
 .DS_Store
 
-# Local runtime state
+# Local runtime state and cache
 *.log
+*.txt
+*.bat
+*.cmd
+test_*.py
 gpr_tabs.json
 tag_cache.json
 
