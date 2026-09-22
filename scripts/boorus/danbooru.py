@@ -17,10 +17,10 @@ from .base import (
 class DanbooruClient(BooruClient):
     """Client for Danbooru and Danbooru-compatible engines."""
 
-    _USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
-    _TIMEOUT_SECONDS = 20
-    _MAX_RETRIES = 3
-    _RETRY_BACKOFF = 1.5
+    _USER_AGENT = "BooruTagsGacha/2.1 (DanbooruClient; SD-WebUI Extension; +https://github.com)"
+    _TIMEOUT_SECONDS = 10
+    _MAX_RETRIES = 2
+    _RETRY_BACKOFF = 0.8
 
     def __init__(
         self,
@@ -36,17 +36,18 @@ class DanbooruClient(BooruClient):
     def image_headers(self, url: str) -> dict[str, str]:
         return {
             "User-Agent": self._USER_AGENT,
-            "Referer": self._base_url,
+            "Referer": "https://danbooru.donmai.us/",
             "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         }
 
-    async def random_post(
+    async def random_posts(
         self,
+        count: int = 1,
         tags: list[str] | None = None,
         exclude_tags: list[str] | None = None,
         rating: str | None = None,
         min_score: int = 0,
-    ) -> BooruPost | None:
+    ) -> list[BooruPost]:
         import random
 
         include = [normalize_tag(t) for t in (tags or []) if t.strip()]
@@ -57,9 +58,10 @@ class DanbooruClient(BooruClient):
 
         is_authenticated = bool(self._username and self._api_key)
 
-        # Authenticated users: Danbooru accepts up to 40 tags in query
         if is_authenticated:
-            query_terms = ["order:random"]
+            # Authenticated users: Danbooru accepts up to 40 tags
+            limit = min(max(count * 3, 20), 100)
+            query_terms = [f"random:{limit}"]
             if norm_rating_char:
                 query_terms.append(f"rating:{norm_rating_char}")
             if min_score > 0:
@@ -70,17 +72,19 @@ class DanbooruClient(BooruClient):
 
             params = {
                 "tags": " ".join(query_terms),
-                "limit": 1,
+                "limit": limit,
             }
             data = await self._request("/posts.json", params)
-            if isinstance(data, list) and data and isinstance(data[0], dict):
-                return self._to_post(data[0])
-            return None
+            if isinstance(data, list) and data:
+                posts = [self._to_post(p) for p in data if isinstance(p, dict) and p.get("id")]
+                random.shuffle(posts)
+                return posts[:count]
+            return []
 
         # Anonymous users: Danbooru STRICTLY limits queries to MAX 2 tags!
-        # Tag 1: order:random
-        # Tag 2: first include tag or rating filter
-        query_terms = ["order:random"]
+        # Use random:N to get candidate batch quickly without hitting SQL table-scan timeout
+        fetch_limit = min(max(count * 4, 30), 100)
+        query_terms = [f"random:{fetch_limit}"]
         if include:
             query_terms.append(include[0])
         elif norm_rating_char:
@@ -90,16 +94,28 @@ class DanbooruClient(BooruClient):
 
         params = {
             "tags": " ".join(query_terms),
-            "limit": 40,
+            "limit": fetch_limit,
         }
 
-        # Query candidate batch in a single fast request
         data = await self._request("/posts.json", params)
         if not isinstance(data, list) or not data:
+            # Fallback 1: if single post requested, try /posts/random.json
+            if count == 1:
+                rand_terms = []
+                if include:
+                    rand_terms.append(include[0])
+                if norm_rating_char and len(rand_terms) < 2:
+                    rand_terms.append(f"rating:{norm_rating_char}")
+                single_data = await self._request("/posts/random.json", {"tags": " ".join(rand_terms)} if rand_terms else None)
+                if isinstance(single_data, dict) and single_data.get("id"):
+                    return [self._to_post(single_data)]
+
+            # Fallback 2: query without random:N using the first tag directly
             if include:
-                data = await self._request("/posts.json", {"tags": include[0], "limit": 40})
-            if not isinstance(data, list) or not data:
-                return None
+                data = await self._request("/posts.json", {"tags": include[0], "limit": fetch_limit})
+
+        if not isinstance(data, list) or not data:
+            return []
 
         # Filter candidates client-side
         candidates = []
@@ -135,19 +151,37 @@ class DanbooruClient(BooruClient):
 
             candidates.append(raw)
 
-        if not candidates:
-            # Relax score or rating slightly if strict filtering had 0 matches
+        # If strict filtering had fewer than needed, relax score slightly
+        if len(candidates) < count:
             for raw in data:
+                if raw in candidates or not isinstance(raw, dict) or not raw.get("id"):
+                    continue
                 post_all_tags = set((raw.get("tag_string") or "").split())
                 if excluded and any(normalize_tag(t) in excluded for t in post_all_tags):
                     continue
                 candidates.append(raw)
 
         if not candidates:
-            return None
+            return []
 
-        selected_raw = random.choice(candidates)
-        return self._to_post(selected_raw)
+        random.shuffle(candidates)
+        return [self._to_post(c) for c in candidates[:count]]
+
+    async def random_post(
+        self,
+        tags: list[str] | None = None,
+        exclude_tags: list[str] | None = None,
+        rating: str | None = None,
+        min_score: int = 0,
+    ) -> BooruPost | None:
+        posts = await self.random_posts(
+            count=1,
+            tags=tags,
+            exclude_tags=exclude_tags,
+            rating=rating,
+            min_score=min_score,
+        )
+        return posts[0] if posts else None
 
     def _to_post(self, raw: dict[str, Any]) -> BooruPost:
         post_id = raw.get("id", "")
@@ -178,6 +212,15 @@ class DanbooruClient(BooruClient):
 
         post_url = f"{self._base_url}/posts/{post_id}"
 
+        from .classifier import register_tag_categories
+        register_tag_categories(
+            artists=tags_artist,
+            characters=tags_character,
+            copyrights=tags_copyright,
+            generals=tags_general,
+            metas=tags_meta,
+        )
+
         return BooruPost(
             id=post_id,
             post_url=post_url,
@@ -204,14 +247,6 @@ class DanbooruClient(BooruClient):
         headers = {
             "User-Agent": self._USER_AGENT,
             "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Referer": "https://danbooru.donmai.us/",
-            "Sec-Ch-Ua": '"Chromium";v="133", "Not(A:Brand";v="99"',
-            "Sec-Ch-Ua-Mobile": "?0",
-            "Sec-Ch-Ua-Platform": '"Windows"',
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "same-origin",
         }
         
         req_params = dict(params or {})
@@ -234,7 +269,7 @@ class DanbooruClient(BooruClient):
                                 data = json.loads(text)
                             except Exception:
                                 data = text
-                        elif status_code == 404:
+                        elif status_code in (404, 422):
                             data = []
                 break
             except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as exc:
@@ -245,14 +280,15 @@ class DanbooruClient(BooruClient):
                     f"Could not connect to {self._base_url} ({exc})"
                 ) from exc
 
-        if status_code == 404:
+        if status_code in (404, 422):
             return []
         if status_code == 401:
             raise BooruAuthException("Danbooru returned 401 Unauthorized — check username and API key.")
         if status_code == 403:
             raise BooruException("Danbooru 403: Cloudflare check or access denied.")
-        if status_code == 422:
-            return []
+        if status_code == 429:
+            from .base import BooruRateLimitException
+            raise BooruRateLimitException("Danbooru 429: Rate limit reached. Please slow down.")
         if status_code not in (200, 201) and status_code is not None:
             raise BooruException(f"Danbooru returned status {status_code}")
 

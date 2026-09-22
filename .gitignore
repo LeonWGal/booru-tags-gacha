@@ -20,3 +20,5 @@ env/
 # Local runtime state
 *.log
 gpr_tabs.json
+tag_cache.json
+

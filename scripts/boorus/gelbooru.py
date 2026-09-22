@@ -45,10 +45,10 @@ def _parse_xml_to_dict(xml_str: str) -> dict[str, Any]:
 class GelbooruClient(BooruClient):
     """Modern JSON & XML DAPI client for Gelbooru, Rule34, Safebooru, TBIB, etc."""
 
-    _USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
-    _TIMEOUT_SECONDS = 15
+    _USER_AGENT = "BooruTagsGacha/2.1 (GelbooruClient; SD-WebUI Extension; +https://github.com)"
+    _TIMEOUT_SECONDS = 12
     _MAX_RETRIES = 2
-    _RETRY_BACKOFF = 1.0
+    _RETRY_BACKOFF = 0.8
 
     def __init__(
         self,
@@ -69,13 +69,15 @@ class GelbooruClient(BooruClient):
             "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         }
 
-    async def random_post(
+    async def random_posts(
         self,
+        count: int = 1,
         tags: list[str] | None = None,
         exclude_tags: list[str] | None = None,
         rating: str | None = None,
         min_score: int = 0,
-    ) -> BooruPost | None:
+    ) -> list[BooruPost]:
+        import random
         include = [normalize_tag(t) for t in (tags or []) if t.strip()]
         excluded = [f"-{normalize_tag(t)}" for t in (exclude_tags or []) if t.strip()]
 
@@ -111,40 +113,75 @@ class GelbooruClient(BooruClient):
         if query_terms:
             count_params["tags"] = ' '.join(query_terms)
 
-        count_payload = await self._request(count_params)
-        count = self._extract_count(count_payload)
+        try:
+            count_payload = await self._request(count_params)
+            total_count = self._extract_count(count_payload)
+        except Exception:
+            total_count = 0
 
-        # 2. Fetch random post using safe pid page offset
-        limit = 20
+        # 2. Fetch random posts batch using safe pid page offset
+        fetch_limit = min(max(count * 4, 25), 100)
         page_params = dict(count_params)
-        page_params["limit"] = limit
+        page_params["limit"] = fetch_limit
         page_params["json"] = 1
 
-        if count > limit:
-            max_pid = min(max(0, (count // limit) - 1), 100)
+        if total_count > fetch_limit:
+            max_pid = min(max(0, (total_count // fetch_limit) - 1), 80)
             page_params["pid"] = randint(0, max_pid)
         else:
             page_params["pid"] = 0
 
-        post_payload = await self._request(page_params)
-        raw_post = self._extract_first_post(post_payload)
+        try:
+            post_payload = await self._request(page_params)
+        except Exception:
+            post_payload = None
 
-        if not raw_post:
+        raw_list = self._extract_all_posts(post_payload)
+
+        if not raw_list:
             # Fallback without json parameter (XML format)
-            del page_params["json"]
-            xml_payload = await self._request(page_params)
-            raw_post = self._extract_first_post(xml_payload)
+            xml_params = dict(page_params)
+            xml_params.pop("json", None)
+            try:
+                xml_payload = await self._request(xml_params)
+                raw_list = self._extract_all_posts(xml_payload)
+            except Exception:
+                pass
 
-        if not raw_post and page_params.get("pid", 0) > 0:
+        if not raw_list and page_params.get("pid", 0) > 0:
             # Fallback to page 0 if deep page was empty
             page_params["pid"] = 0
-            post_payload = await self._request(page_params)
-            raw_post = self._extract_first_post(post_payload)
+            page_params["json"] = 1
+            try:
+                post_payload = await self._request(page_params)
+                raw_list = self._extract_all_posts(post_payload)
+            except Exception:
+                pass
 
-        if not raw_post:
-            return None
+        if not raw_list:
+            return []
 
-        return await self._to_post(raw_post)
+        random.shuffle(raw_list)
+        selected_raw = raw_list[:count]
+        tasks = [self._to_post(p) for p in selected_raw]
+        posts = await asyncio.gather(*tasks, return_exceptions=True)
+        return [p for p in posts if isinstance(p, BooruPost)]
+
+    async def random_post(
+        self,
+        tags: list[str] | None = None,
+        exclude_tags: list[str] | None = None,
+        rating: str | None = None,
+        min_score: int = 0,
+    ) -> BooruPost | None:
+        posts = await self.random_posts(
+            count=1,
+            tags=tags,
+            exclude_tags=exclude_tags,
+            rating=rating,
+            min_score=min_score,
+        )
+        return posts[0] if posts else None
 
     def _extract_count(self, payload: Any) -> int:
         if isinstance(payload, dict):
@@ -166,27 +203,28 @@ class GelbooruClient(BooruClient):
             return len(payload)
         return 0
 
-    def _extract_first_post(self, payload: Any) -> dict[str, Any] | None:
-        import random
-        if isinstance(payload, list) and payload:
-            valid = [p for p in payload if isinstance(p, dict) and p.get("id")]
-            return random.choice(valid) if valid else None
+    def _extract_all_posts(self, payload: Any) -> list[dict[str, Any]]:
+        if isinstance(payload, list):
+            return [p for p in payload if isinstance(p, dict) and p.get("id")]
         if isinstance(payload, dict):
             if "post" in payload:
                 posts = payload["post"]
-                if isinstance(posts, list) and posts:
-                    valid = [p for p in posts if isinstance(p, dict) and p.get("id")]
-                    return random.choice(valid) if valid else None
+                if isinstance(posts, list):
+                    return [p for p in posts if isinstance(p, dict) and p.get("id")]
                 if isinstance(posts, dict) and posts.get("id"):
-                    return posts
+                    return [posts]
             if "posts" in payload:
                 posts = payload["posts"].get("post")
-                if isinstance(posts, list) and posts:
-                    valid = [p for p in posts if isinstance(p, dict) and p.get("id")]
-                    return random.choice(valid) if valid else None
+                if isinstance(posts, list):
+                    return [p for p in posts if isinstance(p, dict) and p.get("id")]
                 if isinstance(posts, dict) and posts.get("id"):
-                    return posts
-        return None
+                    return [posts]
+        return []
+
+    def _extract_first_post(self, payload: Any) -> dict[str, Any] | None:
+        import random
+        valid = self._extract_all_posts(payload)
+        return random.choice(valid) if valid else None
 
     async def _to_post(self, raw: dict[str, Any]) -> BooruPost:
         raw = {k.lstrip('@'): v for k, v in raw.items()}

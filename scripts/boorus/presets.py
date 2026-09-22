@@ -9,7 +9,6 @@ from . import SITE_DANBOORU, SITE_GELBOORU, SITE_YANDERE, SITE_SAFEBOORU, SITE_E
 
 _EXT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PRESETS_FILE = os.path.join(_EXT_DIR, "gacha_presets.json")
-LEGACY_FILE = os.path.join(_EXT_DIR, "gpr_tabs.json")
 _PRESET_LOCK = threading.RLock()
 
 
@@ -77,48 +76,10 @@ DEFAULT_PRESETS: dict[str, dict[str, Any]] = {
 }
 
 
-def _migrate_legacy_presets() -> dict[str, dict[str, Any]]:
-    """Migrate entries from legacy gpr_tabs.json into named presets."""
-    if not os.path.exists(LEGACY_FILE):
-        return dict(DEFAULT_PRESETS)
-
-    try:
-        with open(LEGACY_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        
-        presets = dict(DEFAULT_PRESETS)
-        
-        # Merge txt2img tabs
-        txt_tabs = data.get("txt2img", [])
-        if isinstance(txt_tabs, list):
-            for i, tab in enumerate(txt_tabs):
-                if isinstance(tab, dict) and (tab.get("include") or tab.get("exclude")):
-                    name = f"Legacy Preset {i + 1}"
-                    presets[name] = {
-                        "site": tab.get("site", SITE_DANBOORU),
-                        "include": tab.get("include", ""),
-                        "exclude": tab.get("exclude", ""),
-                        "rating": "safe",
-                        "min_score": 0,
-                        "include_general": True,
-                        "include_character": True,
-                        "include_copyright": True,
-                        "include_artist": True,
-                        "include_meta": False,
-                        "artist_format": "raw",
-                        "artist_weight": 1.1,
-                        "max_general_tags": 25,
-                    }
-        return presets
-    except Exception as e:
-        print(f"[Booru Tags Gacha] Legacy migration notice: {e}")
-        return dict(DEFAULT_PRESETS)
-
-
 def load_all_presets() -> dict[str, dict[str, Any]]:
     with _PRESET_LOCK:
         if not os.path.exists(PRESETS_FILE):
-            presets = _migrate_legacy_presets()
+            presets = dict(DEFAULT_PRESETS)
             save_all_presets(presets)
             return presets
         
@@ -155,7 +116,7 @@ def get_preset(name: str) -> dict[str, Any]:
     if name in presets:
         return presets[name]
     first_key = next(iter(presets.keys()), None)
-    return presets[first_key] if first_key else dict(DEFAULT_PRESETS["🌸 Anime Solo Girl"])
+    return presets[first_key] if first_key else dict(DEFAULT_PRESETS["Character (1girl)"])
 
 
 def save_preset(name: str, data: dict[str, Any]) -> None:
@@ -165,6 +126,11 @@ def save_preset(name: str, data: dict[str, Any]) -> None:
     presets = load_all_presets()
     presets[clean_name] = data
     save_all_presets(presets)
+
+
+def auto_save_preset(name: str, data: dict[str, Any]) -> None:
+    """Silently auto-saves current preset state."""
+    save_preset(name, data)
 
 
 def delete_preset(name: str) -> bool:

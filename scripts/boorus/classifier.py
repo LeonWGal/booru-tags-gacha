@@ -5,12 +5,79 @@ using Danbooru batch tag index, Gelbooru/Moebooru APIs, and smart heuristic rule
 
 import asyncio
 import html
+import json
+import os
 from typing import Any
 import aiohttp
 from .base import normalize_tag
 
 # Global in-memory cache: tag_name -> category (1=artist, 3=copyright, 4=character, 5=meta, 0=general)
 _GLOBAL_TAG_CACHE: dict[str, int] = {}
+_CACHE_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tag_cache.json")
+
+
+def _load_tag_cache() -> None:
+    global _GLOBAL_TAG_CACHE
+    try:
+        if os.path.isfile(_CACHE_FILE):
+            with open(_CACHE_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    _GLOBAL_TAG_CACHE.update({k: int(v) for k, v in data.items()})
+    except Exception:
+        pass
+
+
+def _save_tag_cache() -> None:
+    try:
+        if _GLOBAL_TAG_CACHE:
+            with open(_CACHE_FILE, "w", encoding="utf-8") as f:
+                json.dump(_GLOBAL_TAG_CACHE, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+# Initialize cache from disk
+_load_tag_cache()
+
+
+def register_tag_categories(
+    artists: list[str] | None = None,
+    characters: list[str] | None = None,
+    copyrights: list[str] | None = None,
+    generals: list[str] | None = None,
+    metas: list[str] | None = None,
+) -> None:
+    """Seed cache with known categories from a structured post."""
+    changed = False
+    if artists:
+        for t in artists:
+            if _GLOBAL_TAG_CACHE.get(t) != 1:
+                _GLOBAL_TAG_CACHE[t] = 1
+                changed = True
+    if characters:
+        for t in characters:
+            if _GLOBAL_TAG_CACHE.get(t) != 4:
+                _GLOBAL_TAG_CACHE[t] = 4
+                changed = True
+    if copyrights:
+        for t in copyrights:
+            if _GLOBAL_TAG_CACHE.get(t) != 3:
+                _GLOBAL_TAG_CACHE[t] = 3
+                changed = True
+    if metas:
+        for t in metas:
+            if _GLOBAL_TAG_CACHE.get(t) != 5:
+                _GLOBAL_TAG_CACHE[t] = 5
+                changed = True
+    if generals:
+        for t in generals:
+            if t not in _GLOBAL_TAG_CACHE:
+                _GLOBAL_TAG_CACHE[t] = 0
+                changed = True
+    if changed and len(_GLOBAL_TAG_CACHE) % 10 == 0:
+        _save_tag_cache()
+
 
 # Common known metadata tags
 KNOWN_META_TAGS = {
@@ -47,7 +114,7 @@ async def classify_tags(
         else:
             still_uncached.append(t)
 
-    # 2. Query Danbooru global tag database in batch (handles up to 100 tags in a single request)
+    # 2. Query Danbooru global tag database in batch
     if still_uncached:
         await _lookup_danbooru_batch(still_uncached)
 
@@ -58,6 +125,8 @@ async def classify_tags(
             await _lookup_gelbooru_dapi(remaining_unknown, site_base_url, api_key, user_id)
         elif "yande.re" in site_base_url or "konachan" in site_base_url:
             await _lookup_moebooru_tag(remaining_unknown, site_base_url)
+
+    _save_tag_cache()
 
     # Build final categorized lists
     artists: list[str] = []

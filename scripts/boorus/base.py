@@ -127,6 +127,14 @@ class BooruPost:
         else:
             return "N", "N", "Normal"
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, BooruPost):
+            return False
+        return str(self.id) == str(other.id)
+
+    def __hash__(self) -> int:
+        return hash(str(self.id))
+
     def get_tags(self) -> list[str]:
         return list(self._all_tags)
 
@@ -165,8 +173,7 @@ class BooruClient:
     """Base adapter interface for Booru APIs."""
 
     DEFAULT_USER_AGENT = (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+        "BooruTagsGacha/2.1 (SD-WebUI Extension; +https://github.com)"
     )
 
     def __init__(self, base_url: str = "", loop: asyncio.AbstractEventLoop | None = None):
@@ -199,13 +206,13 @@ class BooruClient:
         rating: str | None = None,
         min_score: int = 0,
     ) -> list[BooruPost]:
-        """Fetch multiple random posts."""
-        results = []
-        for _ in range(count):
-            p = await self.random_post(tags=tags, exclude_tags=exclude_tags, rating=rating, min_score=min_score)
-            if p:
-                results.append(p)
-        return results
+        """Fetch multiple random posts concurrently."""
+        tasks = [
+            self.random_post(tags=tags, exclude_tags=exclude_tags, rating=rating, min_score=min_score)
+            for _ in range(count)
+        ]
+        pulled = await asyncio.gather(*tasks, return_exceptions=True)
+        return [p for p in pulled if isinstance(p, BooruPost)]
 
     async def get_artist_tags(self, tags: list[str]) -> list[str]:
         """Classify which tags in the list belong to artists."""

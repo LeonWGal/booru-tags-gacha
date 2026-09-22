@@ -311,22 +311,24 @@ class TagFormatter:
         if not prompt:
             return prompt, False
 
-        placeholders = {
-            "[gacha]": lambda: cls.format_post(post, config),
-            "[gacha-wa]": lambda: cls.format_without_artist(post, config),
-            "[gacha-oa]": lambda: cls.format_only_artist(post, config),
-            "[gacha-oc]": lambda: cls.format_only_character(post, config),
-            "[gacha-gen]": lambda: cls.format_only_general(post, config),
-            "[gacha-all]": lambda: cls.format_all_raw(post, config),
-        }
+        # Order placeholders from longest to shortest to prevent prefix collision
+        placeholders = [
+            ("[gacha-wa]", lambda: cls.format_without_artist(post, config)),
+            ("[gacha-oa]", lambda: cls.format_only_artist(post, config)),
+            ("[gacha-oc]", lambda: cls.format_only_character(post, config)),
+            ("[gacha-gen]", lambda: cls.format_only_general(post, config)),
+            ("[gacha-all]", lambda: cls.format_all_raw(post, config)),
+            ("[gacha]", lambda: cls.format_post(post, config)),
+        ]
 
         updated = prompt
         replaced_any = False
 
-        for token, format_fn in placeholders.items():
-            if token in updated:
+        for token, format_fn in placeholders:
+            pattern = re.compile(re.escape(token), re.IGNORECASE)
+            if pattern.search(updated):
                 tag_string = format_fn()
-                updated = updated.replace(token, tag_string)
+                updated = pattern.sub(lambda _: tag_string, updated)
                 replaced_any = True
 
         # Clean up double commas and stray spaces from replacement

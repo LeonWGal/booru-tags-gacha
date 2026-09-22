@@ -1,5 +1,5 @@
 @echo off
-"t:\StabilityMatrix\PortableGit\cmd\git.exe" -C "t:\StabilityMatrix\Packages\ForgeNeo\extensions\booru-tags-gacha" add -A
-"t:\StabilityMatrix\PortableGit\cmd\git.exe" -C "t:\StabilityMatrix\Packages\ForgeNeo\extensions\booru-tags-gacha" commit -m "style: polish layout, clean gallery captions, remove overlay clutter and upgrade chips"
-"t:\StabilityMatrix\PortableGit\cmd\git.exe" -C "t:\StabilityMatrix\Packages\ForgeNeo\extensions\booru-tags-gacha" push origin main
+"t:\StabilityMatrix\PortableGit\cmd\git.exe" -C "%~dp0." add -A
+"t:\StabilityMatrix\PortableGit\cmd\git.exe" -C "%~dp0." commit -m "fix(autogacha): optimize generation speed, resolve batch duplicates, fix placeholder precedence, and support full BTG tab settings"
+"t:\StabilityMatrix\PortableGit\cmd\git.exe" -C "%~dp0." push origin main
 pause

@@ -154,8 +154,7 @@ class BooruTagsGachaScript(scripts.Script):
                         show_label=False,
                         elem_id="booru_gacha_gallery",
                         elem_classes=["gacha-gallery-grid"],
-                        columns=[2, 3, 5],
-                        rows=[1, 2],
+                        columns=[2, 3, 4],
                         height=380,
                         object_fit="contain",
                         preview=False,
@@ -333,7 +332,55 @@ class BooruTagsGachaScript(scripts.Script):
                 inc_general_chk, inc_char_chk, inc_copy_chk, inc_artist_chk, inc_meta_chk,
                 artist_fmt_dropdown, artist_weight_slider, max_tags_slider,
             ],
+            show_progress="hidden",
         )
+
+        # Helper: Auto-save preset settings
+        def _auto_save_active(
+            preset_name, site_lbl, rating_val, score_val, inc_val, exc_val,
+            inc_gen, inc_char, inc_copy, inc_art, inc_meta,
+            art_fmt, art_wt, max_tags
+        ):
+            if not preset_name:
+                return
+            site_k = SITE_KEY_BY_LABEL.get(site_lbl, DEFAULT_SITE)
+            data = {
+                "site": site_k,
+                "rating": rating_val,
+                "min_score": int(score_val) if score_val is not None else 0,
+                "include": inc_val or "",
+                "exclude": exc_val or "",
+                "include_general": bool(inc_gen),
+                "include_character": bool(inc_char),
+                "include_copyright": bool(inc_copy),
+                "include_artist": bool(inc_art),
+                "include_meta": bool(inc_meta),
+                "artist_format": art_fmt or "raw",
+                "artist_weight": float(art_wt) if art_wt is not None else 1.1,
+                "max_general_tags": int(max_tags) if max_tags is not None else 25,
+            }
+            presets.auto_save_preset(preset_name, data)
+
+        auto_save_inputs = [
+            preset_dropdown, site_dropdown, rating_dropdown, min_score_number,
+            include_tags_box, exclude_tags_box,
+            inc_general_chk, inc_char_chk, inc_copy_chk, inc_artist_chk, inc_meta_chk,
+            artist_fmt_dropdown, artist_weight_slider, max_tags_slider,
+        ]
+
+        include_tags_box.blur(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
+        exclude_tags_box.blur(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
+        site_dropdown.change(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
+        rating_dropdown.change(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
+        min_score_number.change(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
+        inc_general_chk.change(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
+        inc_char_chk.change(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
+        inc_copy_chk.change(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
+        inc_artist_chk.change(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
+        inc_meta_chk.change(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
+        artist_fmt_dropdown.change(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
+        artist_weight_slider.change(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
+        max_tags_slider.change(fn=_auto_save_active, inputs=auto_save_inputs, outputs=None, show_progress="hidden")
 
         # Event: Save Preset
         def _on_save_preset(
@@ -341,23 +388,11 @@ class BooruTagsGachaScript(scripts.Script):
             inc_gen, inc_char, inc_copy, inc_art, inc_meta,
             art_fmt, art_wt, max_tags
         ):
-            site_k = SITE_KEY_BY_LABEL.get(site_lbl, DEFAULT_SITE)
-            data = {
-                "site": site_k,
-                "rating": rating_val,
-                "min_score": int(score_val),
-                "include": inc_val,
-                "exclude": exc_val,
-                "include_general": inc_gen,
-                "include_character": inc_char,
-                "include_copyright": inc_copy,
-                "include_artist": inc_art,
-                "include_meta": inc_meta,
-                "artist_format": art_fmt,
-                "artist_weight": float(art_wt),
-                "max_general_tags": int(max_tags),
-            }
-            presets.save_preset(preset_name, data)
+            _auto_save_active(
+                preset_name, site_lbl, rating_val, score_val, inc_val, exc_val,
+                inc_gen, inc_char, inc_copy, inc_art, inc_meta,
+                art_fmt, art_wt, max_tags
+            )
             all_names = presets.get_preset_names()
             gr.Info(f"Preset '{preset_name}' saved")
             return gr.Dropdown(choices=all_names, value=preset_name)
@@ -404,11 +439,18 @@ class BooruTagsGachaScript(scripts.Script):
 
         # Main Gacha Execution Function
         async def _do_gacha_pull(
-            count, site_lbl, rating_val, min_score_val, inc_tags, exc_tags,
+            count, preset_name, site_lbl, rating_val, min_score_val, inc_tags, exc_tags,
             inc_gen, inc_char, inc_copy, inc_art, inc_meta,
             rep_under, esc_par, art_fmt, art_wt, max_tags, prefix, suffix,
             history, history_idx,
         ):
+            # Auto-save current preset state on roll
+            _auto_save_active(
+                preset_name, site_lbl, rating_val, min_score_val, inc_tags, exc_tags,
+                inc_gen, inc_char, inc_copy, inc_art, inc_meta,
+                art_fmt, art_wt, max_tags
+            )
+
             site_key = SITE_KEY_BY_LABEL.get(site_lbl, DEFAULT_SITE)
             fmt_config = _get_format_config(
                 inc_gen, inc_char, inc_copy, inc_art, inc_meta,
@@ -488,6 +530,7 @@ class BooruTagsGachaScript(scripts.Script):
             return await _do_gacha_pull(10, *args)
 
         pull_inputs = [
+            preset_dropdown,
             site_dropdown, rating_dropdown, min_score_number, include_tags_box, exclude_tags_box,
             inc_general_chk, inc_char_chk, inc_copy_chk, inc_artist_chk, inc_meta_chk,
             replace_underscores_chk, escape_parens_chk, artist_fmt_dropdown, artist_weight_slider,
@@ -500,11 +543,11 @@ class BooruTagsGachaScript(scripts.Script):
             gacha_results_state, active_card_idx_state, history_state, history_idx_state,
         ]
 
-        pull_1x_evt = pull_1x_btn.click(fn=_pull_1x, inputs=pull_inputs, outputs=pull_outputs)
-        pull_5x_evt = pull_5x_btn.click(fn=_pull_5x, inputs=pull_inputs, outputs=pull_outputs)
-        pull_10x_evt = pull_10x_btn.click(fn=_pull_10x, inputs=pull_inputs, outputs=pull_outputs)
+        pull_1x_evt = pull_1x_btn.click(fn=_pull_1x, inputs=pull_inputs, outputs=pull_outputs, show_progress="minimal")
+        pull_5x_evt = pull_5x_btn.click(fn=_pull_5x, inputs=pull_inputs, outputs=pull_outputs, show_progress="minimal")
+        pull_10x_evt = pull_10x_btn.click(fn=_pull_10x, inputs=pull_inputs, outputs=pull_outputs, show_progress="minimal")
 
-        cancel_pull_btn.click(fn=None, inputs=None, outputs=None, cancels=[pull_1x_evt, pull_5x_evt, pull_10x_evt])
+        cancel_pull_btn.click(fn=None, inputs=None, outputs=None, cancels=[pull_1x_evt, pull_5x_evt, pull_10x_evt], show_progress="hidden")
 
         # Event: Gallery Card Click Selection
         def _on_gallery_select(evt: gr.SelectData, results_list, history, history_idx):
@@ -543,6 +586,7 @@ class BooruTagsGachaScript(scripts.Script):
                 artist_tags_box, character_tags_box, copyright_tags_box,
                 active_card_idx_state, history_state, history_idx_state,
             ],
+            show_progress="hidden",
         )
 
         # History Navigation
@@ -590,6 +634,7 @@ class BooruTagsGachaScript(scripts.Script):
                 artist_tags_box, character_tags_box, copyright_tags_box,
                 history_idx_state,
             ],
+            show_progress="hidden",
         )
 
         next_btn.click(
@@ -600,6 +645,7 @@ class BooruTagsGachaScript(scripts.Script):
                 artist_tags_box, character_tags_box, copyright_tags_box,
                 history_idx_state,
             ],
+            show_progress="hidden",
         )
 
         def _on_clear():
@@ -613,6 +659,7 @@ class BooruTagsGachaScript(scripts.Script):
                 full_tags_textbox, artist_tags_box, character_tags_box, copyright_tags_box,
                 gacha_results_state, active_card_idx_state, history_state, history_idx_state,
             ],
+            show_progress="hidden",
         )
 
         # Event: Save to Favorites
@@ -634,6 +681,7 @@ class BooruTagsGachaScript(scripts.Script):
             fn=_on_save_favorite,
             inputs=[gacha_results_state, active_card_idx_state, full_tags_textbox],
             outputs=[fav_dropdown],
+            show_progress="hidden",
         )
 
         # Event: Load Favorite
@@ -657,6 +705,7 @@ class BooruTagsGachaScript(scripts.Script):
             fn=_on_load_favorite,
             inputs=[fav_dropdown],
             outputs=[full_tags_textbox, artist_tags_box, character_tags_box, copyright_tags_box],
+            show_progress="hidden",
         )
 
         # Event: Delete Favorite
@@ -679,6 +728,7 @@ class BooruTagsGachaScript(scripts.Script):
             fn=_on_delete_favorite,
             inputs=[fav_dropdown],
             outputs=[fav_dropdown],
+            show_progress="hidden",
         )
 
         # Event: Clear All Favorites
@@ -691,6 +741,7 @@ class BooruTagsGachaScript(scripts.Script):
             fn=_on_clear_all_favs,
             inputs=None,
             outputs=[fav_dropdown],
+            show_progress="hidden",
         )
 
         # Prompt Targets Binding
@@ -778,15 +829,56 @@ class BooruTagsGachaScript(scripts.Script):
         *args
     ):
         """Auto-Gacha process hook: replaces placeholders or auto-injects tags into prompt per generation."""
-        prompt_has_placeholder = any(
-            token in (p.prompt or "")
-            for token in ("[gacha]", "[gacha-wa]", "[gacha-oa]", "[gacha-oc]", "[gacha-gen]", "[gacha-all]")
-        )
+        tokens = ("[gacha]", "[gacha-wa]", "[gacha-oa]", "[gacha-oc]", "[gacha-gen]", "[gacha-all]")
+        prompt_str = str(p.prompt or "").lower()
+        all_prompts_str = " ".join(str(x) for x in (getattr(p, "all_prompts", []) or [])).lower()
+        prompt_has_placeholder = any(t in prompt_str or t in all_prompts_str for t in tokens)
 
         if not auto_gacha_chk and not prompt_has_placeholder:
             return
 
-        site_key = SITE_KEY_BY_LABEL.get(site_lbl, DEFAULT_SITE)
+        # Safe argument extraction with sensible defaults from active settings
+        auto_gacha_chk = bool(auto_gacha_chk) if auto_gacha_chk is not None else False
+        auto_mode_dropdown = str(auto_mode_dropdown or "Replace [gacha...] placeholders")
+        auto_neg_chk = bool(auto_neg_chk) if auto_neg_chk is not None else False
+
+        site_str = str(site_lbl or "").strip()
+        site_key = SITE_KEY_BY_LABEL.get(site_str, site_str.lower() if site_str else DEFAULT_SITE) or DEFAULT_SITE
+        if site_key not in SITE_LABEL_BY_KEY:
+            site_key = DEFAULT_SITE
+
+        rating_val = str(rating_val or "safe").strip().lower()
+        try:
+            min_score_val = int(min_score_val or 0)
+        except (ValueError, TypeError):
+            min_score_val = 0
+
+        inc_tags = str(inc_tags or "").strip()
+        exc_tags = str(exc_tags or "").strip()
+
+        inc_gen = bool(inc_gen) if inc_gen is not None else True
+        inc_char = bool(inc_char) if inc_char is not None else True
+        inc_copy = bool(inc_copy) if inc_copy is not None else True
+        inc_art = bool(inc_art) if inc_art is not None else True
+        inc_meta = bool(inc_meta) if inc_meta is not None else False
+
+        rep_under = bool(rep_under) if rep_under is not None else True
+        esc_par = bool(esc_par) if esc_par is not None else True
+
+        art_fmt = str(art_fmt or "raw")
+        try:
+            art_wt = float(art_wt if art_wt is not None else 1.1)
+        except (ValueError, TypeError):
+            art_wt = 1.1
+
+        try:
+            max_tags = int(max_tags if max_tags is not None else 25)
+        except (ValueError, TypeError):
+            max_tags = 25
+
+        prefix = str(prefix or "").strip()
+        suffix = str(suffix or "").strip()
+
         blacklist_raw = getattr(shared.opts, "gpr_universalBlacklist", "") or ""
         bl_list = [t.strip() for t in blacklist_raw.split(',') if t.strip()]
 
@@ -800,17 +892,17 @@ class BooruTagsGachaScript(scripts.Script):
             escape_parentheses=esc_par,
             artist_format=art_fmt,
             artist_weight=art_wt,
-            max_general_tags=int(max_tags),
+            max_general_tags=max_tags,
             prefix=prefix,
             suffix=suffix,
             blacklist=bl_list,
         )
 
-        batch_size = getattr(p, "batch_size", 1)
-        n_iter = getattr(p, "n_iter", 1)
+        batch_size = max(getattr(p, "batch_size", 1) or 1, 1)
+        n_iter = max(getattr(p, "n_iter", 1) or 1, 1)
         total_images = batch_size * n_iter
 
-        # Roll posts for the batch
+        # Roll posts for the batch without downloading image thumbnails (ultra fast)
         results = _run_async(
             pull_gacha(
                 site=site_key,
@@ -818,18 +910,30 @@ class BooruTagsGachaScript(scripts.Script):
                 include=inc_tags,
                 exclude=exc_tags,
                 rating=rating_val,
-                min_score=int(min_score_val),
+                min_score=min_score_val,
                 config=fmt_config,
+                fetch_images=False,
             )
         )
 
         if not results:
+            print(f"[Booru Tags Gacha] No posts matched criteria for Auto-Gacha ({site_key})")
             return
 
-        all_prompts = list(getattr(p, "all_prompts", [p.prompt]))
-        all_neg_prompts = list(getattr(p, "all_negative_prompts", [p.negative_prompt]))
+        all_prompts = list(getattr(p, "all_prompts", []))
+        all_neg_prompts = list(getattr(p, "all_negative_prompts", []))
 
-        for idx in range(len(all_prompts)):
+        base_prompt = all_prompts[0] if all_prompts else (p.prompt or "")
+        base_neg = all_neg_prompts[0] if all_neg_prompts else (p.negative_prompt or "")
+
+        if len(all_prompts) < total_images:
+            all_prompts = [base_prompt] * total_images
+        if len(all_neg_prompts) < total_images:
+            all_neg_prompts = [base_neg] * total_images
+
+        print(f"[Booru Tags Gacha] Auto-Gacha active for {total_images} image(s) [Site: {site_key}, Unique Cards: {len(results)}]")
+
+        for idx in range(total_images):
             card = results[idx % len(results)]
             cur_prompt = all_prompts[idx]
 
@@ -856,12 +960,50 @@ class BooruTagsGachaScript(scripts.Script):
                 cur_neg = all_neg_prompts[idx]
                 all_neg_prompts[idx] = f"{cur_neg}, {exc_tags}".strip(", ")
 
+            caption = card.get_gallery_caption()
+            print(f"  [Auto-Gacha #{idx + 1}/{total_images}] Post #{card.post.id} ({card.tier}): {caption}")
+
         p.prompt = all_prompts[0]
         p.all_prompts = all_prompts
 
-        if auto_neg_chk and exc_tags:
-            p.negative_prompt = all_neg_prompts[0]
-            p.all_negative_prompts = all_neg_prompts
+        p.negative_prompt = all_neg_prompts[0]
+        p.all_negative_prompts = all_neg_prompts
+
+        # Update main prompt references
+        p.main_prompt = all_prompts[0]
+        if hasattr(p, "main_negative_prompt"):
+            p.main_negative_prompt = all_neg_prompts[0]
+
+        # Support Hires Fix prompts
+        if getattr(p, "enable_hr", False):
+            if hasattr(p, "all_hr_prompts"):
+                p.all_hr_prompts = list(all_prompts)
+            if hasattr(p, "hr_prompt"):
+                p.hr_prompt = all_prompts[0]
+            if hasattr(p, "all_hr_negative_prompts"):
+                p.all_hr_negative_prompts = list(all_neg_prompts)
+            if hasattr(p, "hr_negative_prompt"):
+                p.hr_negative_prompt = all_neg_prompts[0]
+
+        if hasattr(p, "_all_prompts_c"):
+            p._all_prompts_c = list(all_prompts)
+        if hasattr(p, "_all_negative_prompts_c"):
+            p._all_negative_prompts_c = list(all_neg_prompts)
+
+        # Synchronize and diversify seeds across the batch
+        if hasattr(p, "all_seeds"):
+            seeds_list = list(p.all_seeds)
+            if len(seeds_list) < total_images:
+                base_seed = seeds_list[0] if seeds_list else int(getattr(p, "seed", 0) or 0)
+                p.all_seeds = [base_seed + i for i in range(total_images)]
+            elif len(seeds_list) > 1 and len(set(seeds_list)) == 1 and getattr(p, "subseed_strength", 0) == 0:
+                p.all_seeds = [seeds_list[0] + i for i in range(len(seeds_list))]
+
+        if hasattr(p, "all_subseeds"):
+            subseeds_list = list(p.all_subseeds)
+            if len(subseeds_list) < total_images:
+                base_subseed = subseeds_list[0] if subseeds_list else int(getattr(p, "subseed", 0) or 0)
+                p.all_subseeds = [base_subseed + i for i in range(total_images)]
 
 
 def on_ui_settings():

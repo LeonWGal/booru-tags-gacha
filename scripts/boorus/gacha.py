@@ -20,25 +20,34 @@ def reset_session_history() -> None:
     _SEEN_POSTS.clear()
 
 
+_IMAGE_CACHE: dict[str, Image.Image] = {}
+
+
 async def fetch_image(url: str, headers: dict[str, str] | None = None) -> Image.Image | None:
-    """Download preview/thumbnail image asynchronously."""
+    """Download preview/thumbnail image asynchronously with memory caching."""
     if not url:
         return None
+    if url in _IMAGE_CACHE:
+        return _IMAGE_CACHE[url]
+
     try:
         req_headers = headers or {
             "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                "BooruTagsGacha/2.1 (SD-WebUI Extension; +https://github.com)"
             ),
             "Referer": url,
+            "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         }
-        timeout = aiohttp.ClientTimeout(total=20)
+        timeout = aiohttp.ClientTimeout(total=8, connect=4)
         async with aiohttp.ClientSession(timeout=timeout, headers=req_headers) as session:
             async with session.get(url) as response:
                 if response.status == 200:
                     data = await response.read()
                     img = Image.open(io.BytesIO(data))
                     img.load()
+                    if len(_IMAGE_CACHE) > 150:
+                        _IMAGE_CACHE.pop(next(iter(_IMAGE_CACHE)))
+                    _IMAGE_CACHE[url] = img
                     return img
     except Exception:
         pass
@@ -109,9 +118,11 @@ class GachaPullResult:
         """Generates categorized interactive tag chips."""
         groups = []
 
+        hint = "Click: Copy | Shift+Click: Add to Include | Alt+Click: Add to Prompt"
+
         # Artists
         if self.post.tags_artist:
-            chips = "".join(f'<span class="gacha-chip gacha-chip-artist" title="{t}">{t.replace("_", " ")}</span>' for t in self.post.tags_artist)
+            chips = "".join(f'<span class="gacha-chip gacha-chip-artist" data-tag="{t}" title="{t} ({hint})">{t.replace("_", " ")}</span>' for t in self.post.tags_artist)
             groups.append(f"""
             <div class="gacha-tag-group">
                 <span class="gacha-tag-group-label gacha-label-artist">Artists ({len(self.post.tags_artist)})</span>
@@ -121,7 +132,7 @@ class GachaPullResult:
 
         # Characters
         if self.post.tags_character:
-            chips = "".join(f'<span class="gacha-chip gacha-chip-character" title="{t}">{t.replace("_", " ")}</span>' for t in self.post.tags_character)
+            chips = "".join(f'<span class="gacha-chip gacha-chip-character" data-tag="{t}" title="{t} ({hint})">{t.replace("_", " ")}</span>' for t in self.post.tags_character)
             groups.append(f"""
             <div class="gacha-tag-group">
                 <span class="gacha-tag-group-label gacha-label-character">Characters ({len(self.post.tags_character)})</span>
@@ -131,7 +142,7 @@ class GachaPullResult:
 
         # Copyright / Series
         if self.post.tags_copyright:
-            chips = "".join(f'<span class="gacha-chip gacha-chip-copyright" title="{t}">{t.replace("_", " ")}</span>' for t in self.post.tags_copyright)
+            chips = "".join(f'<span class="gacha-chip gacha-chip-copyright" data-tag="{t}" title="{t} ({hint})">{t.replace("_", " ")}</span>' for t in self.post.tags_copyright)
             groups.append(f"""
             <div class="gacha-tag-group">
                 <span class="gacha-tag-group-label gacha-label-copyright">Series ({len(self.post.tags_copyright)})</span>
@@ -139,9 +150,21 @@ class GachaPullResult:
             </div>
             """)
 
+        # General Tags (top 25)
+        if self.post.tags_general:
+            top_general = self.post.tags_general[:25]
+            chips = "".join(f'<span class="gacha-chip gacha-chip-general" data-tag="{t}" title="{t} ({hint})">{t.replace("_", " ")}</span>' for t in top_general)
+            more_lbl = f" (+{len(self.post.tags_general) - 25})" if len(self.post.tags_general) > 25 else ""
+            groups.append(f"""
+            <div class="gacha-tag-group">
+                <span class="gacha-tag-group-label gacha-label-general">General ({len(top_general)}{more_lbl})</span>
+                <div class="gacha-tag-group-items">{chips}</div>
+            </div>
+            """)
+
         # Meta Tags
         if self.post.tags_meta:
-            chips = "".join(f'<span class="gacha-chip gacha-chip-meta" title="{t}">{t.replace("_", " ")}</span>' for t in self.post.tags_meta)
+            chips = "".join(f'<span class="gacha-chip gacha-chip-meta" data-tag="{t}" title="{t} ({hint})">{t.replace("_", " ")}</span>' for t in self.post.tags_meta)
             groups.append(f"""
             <div class="gacha-tag-group">
                 <span class="gacha-tag-group-label gacha-label-meta">Meta ({len(self.post.tags_meta)})</span>
@@ -194,8 +217,9 @@ async def pull_gacha(
     min_score: int = 0,
     config: TagFormatConfig | None = None,
     custom_cfg: dict[str, Any] | None = None,
+    fetch_images: bool = True,
 ) -> list[GachaPullResult]:
-    """Execute 1x, 5x, or 10x Gacha pull."""
+    """Execute 1x, 5x, or 10x Gacha pull with optional image fetching for fast autogacha."""
     fmt_config = config or TagFormatConfig()
     
     include_list = [t.strip() for t in include.split(',') if t.strip()] or None
@@ -203,35 +227,116 @@ async def pull_gacha(
 
     client = get_client(site, custom_cfg=custom_cfg)
 
-    async def _fetch_single() -> GachaPullResult | None:
-        # Re-roll up to 5 times if seen
-        for _ in range(5):
+    # 1. Fetch candidate posts from client (use batch random_posts for count > 1)
+    candidate_posts: list[BooruPost] = []
+    try:
+        if count == 1:
+            single = await client.random_post(
+                tags=include_list,
+                exclude_tags=exclude_list,
+                rating=rating,
+                min_score=min_score,
+            )
+            if single:
+                candidate_posts.append(single)
+        else:
+            candidate_posts = await client.random_posts(
+                count=count,
+                tags=include_list,
+                exclude_tags=exclude_list,
+                rating=rating,
+                min_score=min_score,
+            )
+    except Exception as e:
+        print(f"[Booru Tags Gacha] Roll error ({site}): {e}")
+
+    # Deduplicate candidates by unique post ID
+    unique_candidates: list[BooruPost] = []
+    seen_ids: set[str] = set()
+    for p in candidate_posts:
+        if isinstance(p, BooruPost):
+            pid = str(p.id)
+            if pid not in seen_ids:
+                seen_ids.add(pid)
+                unique_candidates.append(p)
+
+    # Fallback / Retry: if we didn't get enough unique posts, request more
+    if len(unique_candidates) < count:
+        retries = 0
+        while len(unique_candidates) < count and retries < 2:
+            retries += 1
+            needed = count - len(unique_candidates)
             try:
-                post = await client.random_post(
-                    tags=include_list,
-                    exclude_tags=exclude_list,
-                    rating=rating,
-                    min_score=min_score,
-                )
-            except Exception as e:
-                print(f"[Booru Tags Gacha] Roll error ({site}): {e}")
-                return None
+                if count == 1:
+                    more_p = await client.random_post(
+                        tags=include_list,
+                        exclude_tags=exclude_list,
+                        rating=rating,
+                        min_score=min_score,
+                    )
+                    more_list = [more_p] if more_p else []
+                else:
+                    more_list = await client.random_posts(
+                        count=max(needed * 2, 4),
+                        tags=include_list,
+                        exclude_tags=exclude_list,
+                        rating=rating,
+                        min_score=min_score,
+                    )
+                for p in more_list:
+                    if isinstance(p, BooruPost):
+                        pid = str(p.id)
+                        if pid not in seen_ids:
+                            seen_ids.add(pid)
+                            unique_candidates.append(p)
+                        if len(unique_candidates) >= count:
+                            break
+            except Exception:
+                break
 
-            if not post:
-                return None
+    if not unique_candidates:
+        return []
 
-            key = (site, post.id)
-            if key not in _SEEN_POSTS or count == 1:
-                _SEEN_POSTS.add(key)
-                img = await fetch_image(post.preview_url, client.image_headers(post.preview_url))
-                if not img and post.file_url != post.preview_url:
-                    img = await fetch_image(post.file_url, client.image_headers(post.file_url))
-                return GachaPullResult(post, site, img, fmt_config)
+    # 2. Select distinct posts respecting session history
+    selected_posts: list[BooruPost] = []
 
-        return None
+    # First pass: prefer candidates not seen in the current session
+    for p in unique_candidates:
+        key = (site, str(p.id))
+        if key not in _SEEN_POSTS:
+            _SEEN_POSTS.add(key)
+            selected_posts.append(p)
+            if len(selected_posts) >= count:
+                break
 
-    tasks = [_fetch_single() for _ in range(count)]
-    pulled = await asyncio.gather(*tasks)
-    
-    results = [p for p in pulled if p is not None]
-    return results
+    # Second pass: if some candidates were previously seen, still fill up to count
+    # so that the current batch is ALWAYS filled with distinct posts!
+    if len(selected_posts) < count:
+        for p in unique_candidates:
+            if p not in selected_posts:
+                _SEEN_POSTS.add((site, str(p.id)))
+                selected_posts.append(p)
+                if len(selected_posts) >= count:
+                    break
+
+    # Final safeguard: if selected_posts is somehow still empty, fallback to available candidates
+    if not selected_posts:
+        selected_posts = unique_candidates[:count]
+
+    # Prevent _SEEN_POSTS from accumulating indefinitely
+    if len(_SEEN_POSTS) > 1000:
+        _SEEN_POSTS.clear()
+
+    # 3. Build card results (skip thumbnail network I/O if fetch_images is False)
+    async def _build_card(post: BooruPost) -> GachaPullResult:
+        img = None
+        if fetch_images:
+            img = await fetch_image(post.preview_url, client.image_headers(post.preview_url))
+            if not img and post.file_url and post.file_url != post.preview_url:
+                img = await fetch_image(post.file_url, client.image_headers(post.file_url))
+        return GachaPullResult(post, site, img, fmt_config)
+
+    card_tasks = [_build_card(p) for p in selected_posts]
+    results = await asyncio.gather(*card_tasks)
+
+    return list(results)

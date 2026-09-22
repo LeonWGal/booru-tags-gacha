@@ -1,6 +1,7 @@
 """Client for Moebooru JSON API (Yande.re, Konachan)."""
 
 import asyncio
+import html
 from typing import Any
 import aiohttp
 
@@ -17,10 +18,10 @@ from .classifier import classify_tags
 class MoebooruClient(BooruClient):
     """Client for Moebooru engines (yande.re, konachan)."""
 
-    _USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
-    _TIMEOUT_SECONDS = 20
-    _MAX_RETRIES = 3
-    _RETRY_BACKOFF = 1.5
+    _USER_AGENT = "BooruTagsGacha/2.1 (MoebooruClient; SD-WebUI Extension; +https://github.com)"
+    _TIMEOUT_SECONDS = 12
+    _MAX_RETRIES = 2
+    _RETRY_BACKOFF = 0.8
 
     def __init__(
         self,
@@ -37,13 +38,14 @@ class MoebooruClient(BooruClient):
             "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         }
 
-    async def random_post(
+    async def random_posts(
         self,
+        count: int = 1,
         tags: list[str] | None = None,
         exclude_tags: list[str] | None = None,
         rating: str | None = None,
         min_score: int = 0,
-    ) -> BooruPost | None:
+    ) -> list[BooruPost]:
         import random
         include = [normalize_tag(t) for t in (tags or []) if t.strip()]
         excluded = [f"-{normalize_tag(t)}" for t in (exclude_tags or []) if t.strip()]
@@ -59,21 +61,41 @@ class MoebooruClient(BooruClient):
         query_terms.extend(include)
         query_terms.extend(excluded)
 
+        limit = min(max(count * 4, 30), 100)
         params = {
             "tags": ' '.join(query_terms),
-            "limit": 20,
+            "limit": limit,
         }
 
         data = await self._request("/post.json", params)
         if not isinstance(data, list) or not data:
-            return None
+            return []
 
         valid_posts = [p for p in data if isinstance(p, dict) and p.get("id")]
         if not valid_posts:
-            return None
+            return []
 
-        raw = random.choice(valid_posts)
-        return await self._to_post(raw)
+        random.shuffle(valid_posts)
+        selected_raw = valid_posts[:count]
+        tasks = [self._to_post(raw) for raw in selected_raw]
+        posts = await asyncio.gather(*tasks, return_exceptions=True)
+        return [p for p in posts if isinstance(p, BooruPost)]
+
+    async def random_post(
+        self,
+        tags: list[str] | None = None,
+        exclude_tags: list[str] | None = None,
+        rating: str | None = None,
+        min_score: int = 0,
+    ) -> BooruPost | None:
+        posts = await self.random_posts(
+            count=1,
+            tags=tags,
+            exclude_tags=exclude_tags,
+            rating=rating,
+            min_score=min_score,
+        )
+        return posts[0] if posts else None
 
     async def _to_post(self, raw: dict[str, Any]) -> BooruPost:
         post_id = raw.get("id", "")
