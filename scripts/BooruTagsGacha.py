@@ -183,8 +183,9 @@ class BooruTagsGachaScript(scripts.Script):
 
             # Quick Prompt Actions
             with gr.Row():
-                append_prompt_btn = gr.Button("Append Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
+                insert_gacha_btn = gr.Button("⚡ Insert [gacha] to Prompt", variant="primary", elem_classes=["gacha-action-btn", "gacha-gacha-btn"])
                 replace_prompt_btn = gr.Button("Replace Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
+                append_prompt_btn = gr.Button("Append Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
                 prepend_prompt_btn = gr.Button("Prepend Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
                 add_negative_btn = gr.Button("To Negative", elem_classes=["gacha-action-btn", "gacha-insert-btn", "gacha-neg-btn"])
 
@@ -198,6 +199,26 @@ class BooruTagsGachaScript(scripts.Script):
                 prev_btn = gr.Button("Previous", size="sm", elem_classes=["gacha-sub-btn"])
                 next_btn = gr.Button("Next", size="sm", elem_classes=["gacha-sub-btn"])
                 clear_btn = gr.Button("Clear", size="sm", elem_classes=["gacha-sub-btn"])
+
+            # Primary Auto-Gacha Controls (Prominently placed, remembered across sessions)
+            with gr.Row(elem_classes=["gacha-autogacha-controls-row"]):
+                auto_gacha_chk = gr.Checkbox(
+                    label="⚡ Auto-Gacha on Generate (Unique random card for every image in batch)",
+                    value=bool(getattr(shared.opts, "gpr_auto_gacha_enable", False)),
+                    scale=2,
+                )
+                auto_mode_dropdown = gr.Dropdown(
+                    label="Auto-Gacha Mode",
+                    choices=[
+                        "Replace Full Prompt",
+                        "Replace [gacha...] placeholders",
+                        "Append to Prompt",
+                        "Prepend to Prompt",
+                    ],
+                    value=str(getattr(shared.opts, "gpr_auto_gacha_mode", "Replace Full Prompt")),
+                    scale=2,
+                )
+                auto_neg_chk = gr.Checkbox(label="Auto-Add Exclude to Negative", value=False, scale=1)
 
             # Built-in Favorites Browser Section
             def _safe_get_fav_choices():
@@ -271,26 +292,18 @@ class BooruTagsGachaScript(scripts.Script):
                         scale=1,
                     )
 
-            # Collapsible Auto-Gacha on Generate
-            with gr.Accordion("Auto-Gacha on Generate", open=False):
+            # Placeholders Guide Accordion
+            with gr.Accordion("Auto-Gacha Placeholders Reference", open=False):
                 gr.Markdown(
-                    "Automatically roll random tags on every generation. "
-                    "Supports placeholder substitution: `[gacha]` (full prompt), `[gacha-wa]` (without artist), "
-                    "`[gacha-oa]` (only artist), `[gacha-oc]` (only character), `[gacha-gen]` (only general)."
+                    "You can insert placeholders into your txt2img/img2img prompt:\n"
+                    "- `[gacha]`: Full formatted tags for the rolled card\n"
+                    "- `[gacha-wa]`: Tags without artist (character, series, general, meta)\n"
+                    "- `[gacha-oa]`: Artist tags only\n"
+                    "- `[gacha-oc]`: Character tags only\n"
+                    "- `[gacha-gen]`: General tags only\n"
+                    "- `[gacha-all]`: All raw tags without filtering\n\n"
+                    "*Tip: Click `⚡ Insert [gacha] to Prompt` to instantly set up multi-batch random rolls.*"
                 )
-                with gr.Row():
-                    auto_gacha_chk = gr.Checkbox(label="Enable Auto-Gacha on Generate", value=False)
-                    auto_mode_dropdown = gr.Dropdown(
-                        label="Auto-Gacha Mode",
-                        choices=[
-                            "Replace [gacha...] placeholders",
-                            "Append to Prompt",
-                            "Prepend to Prompt",
-                            "Replace Full Prompt",
-                        ],
-                        value="Replace [gacha...] placeholders",
-                    )
-                    auto_neg_chk = gr.Checkbox(label="Auto-Add Exclude Tags to Negative", value=False)
 
         # Helper to construct TagFormatConfig from UI values
         def _get_format_config(
@@ -797,7 +810,30 @@ class BooruTagsGachaScript(scripts.Script):
                     text = TagFormatter.strip_prompt_text(text, cfg)
                 return text
 
+            def _transfer_insert_gacha(cur):
+                token = "[gacha]"
+                if not cur or not cur.strip():
+                    new_prompt = token
+                elif token in cur:
+                    new_prompt = cur
+                else:
+                    new_prompt = f"{cur.strip().rstrip(',')}, {token}"
+
+                try:
+                    shared.opts.set("gpr_auto_gacha_enable", True)
+                    shared.opts.save(shared.config_filename)
+                except Exception:
+                    pass
+
+                gr.Info("Inserted [gacha] into prompt and enabled Auto-Gacha! Each image in your batch will receive a unique random card.")
+                return new_prompt, True
+
             if target_prompt is not None:
+                insert_gacha_btn.click(
+                    fn=_transfer_insert_gacha,
+                    inputs=[target_prompt],
+                    outputs=[target_prompt, auto_gacha_chk],
+                )
                 append_prompt_btn.click(
                     fn=_transfer_append,
                     inputs=[full_tags_textbox, target_prompt, strip_tags_box, strip_tags_chk],
@@ -830,6 +866,27 @@ class BooruTagsGachaScript(scripts.Script):
                     inputs=[exclude_tags_box, target_neg_prompt],
                     outputs=[target_neg_prompt],
                 )
+
+            def _save_auto_gacha_settings(enabled, mode):
+                try:
+                    shared.opts.set("gpr_auto_gacha_enable", bool(enabled))
+                    shared.opts.set("gpr_auto_gacha_mode", str(mode))
+                    shared.opts.save(shared.config_filename)
+                except Exception:
+                    pass
+
+            auto_gacha_chk.change(
+                fn=_save_auto_gacha_settings,
+                inputs=[auto_gacha_chk, auto_mode_dropdown],
+                outputs=None,
+                show_progress="hidden",
+            )
+            auto_mode_dropdown.change(
+                fn=_save_auto_gacha_settings,
+                inputs=[auto_gacha_chk, auto_mode_dropdown],
+                outputs=None,
+                show_progress="hidden",
+            )
 
         return [
             auto_gacha_chk, auto_mode_dropdown, auto_neg_chk,
@@ -890,7 +947,7 @@ class BooruTagsGachaScript(scripts.Script):
 
         # Safe argument extraction with sensible defaults from active settings
         auto_gacha_chk = bool(auto_gacha_chk) if auto_gacha_chk is not None else False
-        auto_mode_dropdown = str(auto_mode_dropdown or "Replace [gacha...] placeholders")
+        auto_mode_dropdown = str(auto_mode_dropdown or "Replace Full Prompt")
         auto_neg_chk = bool(auto_neg_chk) if auto_neg_chk is not None else False
 
         site_str = str(site_lbl or "").strip()
@@ -1012,14 +1069,18 @@ class BooruTagsGachaScript(scripts.Script):
             # 2. If no placeholders and Auto-Gacha is enabled
             if not was_replaced and auto_gacha_chk:
                 tag_string = card.full_prompt
-                if auto_mode_dropdown == "Append to Prompt":
+                if auto_mode_dropdown == "Replace Full Prompt":
+                    updated_prompt = tag_string
+                elif auto_mode_dropdown == "Replace [gacha...] placeholders":
+                    # If cur_prompt matches the un-expanded base prompt or is empty, replace fully per batch item
+                    if not cur_prompt.strip() or cur_prompt == base_prompt:
+                        updated_prompt = tag_string
+                    else:
+                        updated_prompt = f"{cur_prompt}, {tag_string}".strip(", ")
+                elif auto_mode_dropdown == "Append to Prompt":
                     updated_prompt = f"{cur_prompt}, {tag_string}".strip(", ")
                 elif auto_mode_dropdown == "Prepend to Prompt":
                     updated_prompt = f"{tag_string}, {cur_prompt}".strip(", ")
-                elif auto_mode_dropdown == "Replace Full Prompt":
-                    updated_prompt = tag_string
-                elif auto_mode_dropdown == "Replace [gacha...] placeholders":
-                    updated_prompt = f"{cur_prompt}, {tag_string}".strip(", ")
 
             if fmt_config.strip_tags_enable and fmt_config.blacklist:
                 updated_prompt = TagFormatter.strip_prompt_text(updated_prompt, fmt_config)
@@ -1099,19 +1160,19 @@ class BooruTagsGachaScript(scripts.Script):
         start_idx = batch_num * batch_size
         end_idx = start_idx + batch_size
 
-        if hasattr(p, "all_prompts") and len(p.all_prompts) >= end_idx:
-            p.prompts = p.all_prompts[start_idx:end_idx]
-        if hasattr(p, "all_negative_prompts") and len(p.all_negative_prompts) >= end_idx:
-            p.negative_prompts = p.all_negative_prompts[start_idx:end_idx]
-        if hasattr(p, "all_seeds") and len(p.all_seeds) >= end_idx:
-            p.seeds = p.all_seeds[start_idx:end_idx]
-        if hasattr(p, "all_subseeds") and len(p.all_subseeds) >= end_idx:
-            p.subseeds = p.all_subseeds[start_idx:end_idx]
+        if hasattr(p, "all_prompts") and len(p.all_prompts) > start_idx:
+            p.prompts = p.all_prompts[start_idx:min(end_idx, len(p.all_prompts))]
+        if hasattr(p, "all_negative_prompts") and len(p.all_negative_prompts) > start_idx:
+            p.negative_prompts = p.all_negative_prompts[start_idx:min(end_idx, len(p.all_negative_prompts))]
+        if hasattr(p, "all_seeds") and len(p.all_seeds) > start_idx:
+            p.seeds = p.all_seeds[start_idx:min(end_idx, len(p.all_seeds))]
+        if hasattr(p, "all_subseeds") and len(p.all_subseeds) > start_idx:
+            p.subseeds = p.all_subseeds[start_idx:min(end_idx, len(p.all_subseeds))]
         if getattr(p, "enable_hr", False):
-            if hasattr(p, "all_hr_prompts") and len(p.all_hr_prompts) >= end_idx:
-                p.hr_prompts = p.all_hr_prompts[start_idx:end_idx]
-            if hasattr(p, "all_hr_negative_prompts") and len(p.all_hr_negative_prompts) >= end_idx:
-                p.hr_negative_prompts = p.all_hr_negative_prompts[start_idx:end_idx]
+            if hasattr(p, "all_hr_prompts") and len(p.all_hr_prompts) > start_idx:
+                p.hr_prompts = p.all_hr_prompts[start_idx:min(end_idx, len(p.all_hr_prompts))]
+            if hasattr(p, "all_hr_negative_prompts") and len(p.all_hr_negative_prompts) > start_idx:
+                p.hr_negative_prompts = p.all_hr_negative_prompts[start_idx:min(end_idx, len(p.all_hr_negative_prompts))]
 
 
 def on_ui_settings():
@@ -1170,6 +1231,22 @@ def on_ui_settings():
             True,
             "Enable Tag Stripping from Prompt",
             gr.Checkbox,
+        ),
+        "gpr_auto_gacha_enable": shared.OptionInfo(
+            False,
+            "Enable Auto-Gacha on Generate by Default",
+            gr.Checkbox,
+        ).info("When checked, every generation automatically rolls distinct tags for every image in your batch."),
+        "gpr_auto_gacha_mode": shared.OptionInfo(
+            "Replace Full Prompt",
+            "Default Auto-Gacha Mode",
+            gr.Dropdown,
+            lambda: {"choices": [
+                "Replace Full Prompt",
+                "Replace [gacha...] placeholders",
+                "Append to Prompt",
+                "Prepend to Prompt",
+            ]},
         ),
     }
 

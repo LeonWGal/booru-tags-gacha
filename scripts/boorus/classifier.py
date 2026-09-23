@@ -162,8 +162,8 @@ async def _lookup_danbooru_batch(tags: list[str]) -> None:
             "limit": 100,
         }
         headers = {
-            "User-Agent": "BooruTagsGacha/2.1 (TagClassifier; Stable Diffusion WebUI extension)",
-            "Accept": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "application/json, text/plain, */*",
         }
         timeout = aiohttp.ClientTimeout(total=3)
         async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
@@ -223,25 +223,30 @@ async def _lookup_gelbooru_dapi(
 
 
 async def _lookup_moebooru_tag(tags: list[str], base_url: str) -> None:
-    """Look up tag types from Moebooru."""
+    """Look up tag types from Moebooru (Yande.re, Konachan)."""
+    if not tags:
+        return
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+    }
+    timeout = aiohttp.ClientTimeout(total=4)
     try:
-        names_query = ",".join(tags[:50])
-        url = f"{base_url.rstrip('/')}/tag.json"
-        params = {"name": names_query}
-        headers = {
-            "User-Agent": "BooruTagsGacha/2.1 (TagClassifier; Stable Diffusion WebUI extension)",
-            "Accept": "application/json",
-        }
-        timeout = aiohttp.ClientTimeout(total=3)
         async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
-            async with session.get(url, params=params) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    if isinstance(data, list):
-                        for t in data:
-                            name = t.get("name")
-                            ttype = int(t.get("type", 0) or 0)
-                            if name:
-                                _GLOBAL_TAG_CACHE[name] = ttype
+            async def fetch_one(tag_name: str):
+                try:
+                    url = f"{base_url.rstrip('/')}/tag.json"
+                    params = {"name": tag_name}
+                    async with session.get(url, params=params) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            if isinstance(data, list) and data:
+                                ttype = int(data[0].get("type", 0) or 0)
+                                _GLOBAL_TAG_CACHE[tag_name] = ttype
+                except Exception:
+                    pass
+
+            # Query up to 35 unknown tags concurrently for high speed
+            await asyncio.gather(*[fetch_one(t) for t in tags[:35]])
     except Exception:
         pass

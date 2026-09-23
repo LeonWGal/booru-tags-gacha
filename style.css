@@ -434,6 +434,33 @@
     transform: scale(0.98) !important;
 }
 
+.gacha-gacha-btn {
+    background: #059669 !important; /* Vivid Emerald */
+    color: #ffffff !important;
+    border: 1px solid #047857 !important;
+}
+
+.gacha-gacha-btn:hover {
+    background: #047857 !important;
+    filter: brightness(1.08) !important;
+}
+
+.gacha-autogacha-controls-row {
+    background: var(--background-fill-secondary, #f8fafc) !important;
+    border: 1px solid var(--border-color-primary, #e2e8f0) !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    margin: 6px 0 !important;
+    gap: 12px !important;
+}
+
+.dark .gacha-autogacha-controls-row,
+[data-theme="dark"] .gacha-autogacha-controls-row,
+[data-theme="night"] .gacha-autogacha-controls-row {
+    background: var(--panel-background-fill, #1e222a) !important;
+    border-color: var(--border-color-primary, #374151) !important;
+}
+
 .gacha-fav-btn {
     color: #d97706 !important;
 }
