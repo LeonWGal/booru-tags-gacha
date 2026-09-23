@@ -78,6 +78,12 @@ class GelbooruClient(BooruClient):
         min_score: int = 0,
     ) -> list[BooruPost]:
         import random
+
+        # Gelbooru DAPI strictly requires User ID and API Key
+        if "gelbooru.com" in self._base_url and (not self._api_key or not self._user_id):
+            print("[Booru Tags Gacha] Gelbooru DAPI requires API Key & User ID in Settings. Triggering fallback...")
+            return []
+
         include = [normalize_tag(t) for t in (tags or []) if t.strip()]
         excluded = [f"-{normalize_tag(t)}" for t in (exclude_tags or []) if t.strip()]
 

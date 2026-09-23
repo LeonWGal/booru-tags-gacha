@@ -1,6 +1,7 @@
 """Multi-Pull Gacha Engine and Card Generator for Booru Tags Gacha."""
 
 import asyncio
+import copy
 import io
 from typing import Any
 import aiohttp
@@ -219,12 +220,13 @@ async def pull_gacha(
     custom_cfg: dict[str, Any] | None = None,
     fetch_images: bool = True,
 ) -> list[GachaPullResult]:
-    """Execute 1x, 5x, or 10x Gacha pull with optional image fetching for fast autogacha."""
+    """Execute 1x, 5x, or 10x Gacha pull with optional image fetching, smart fallback, and diversification."""
     fmt_config = config or TagFormatConfig()
     
     include_list = [t.strip() for t in include.split(',') if t.strip()] or None
     exclude_list = [t.strip() for t in exclude.split(',') if t.strip()] or None
 
+    active_site = site
     client = get_client(site, custom_cfg=custom_cfg)
 
     # 1. Fetch candidate posts from client (use batch random_posts for count > 1)
@@ -260,29 +262,64 @@ async def pull_gacha(
                 seen_ids.add(pid)
                 unique_candidates.append(p)
 
+    # 1b. Smart Fallback if primary site yielded 0 candidates
+    if not unique_candidates:
+        rating_str = str(rating or "safe").lower()
+        if rating_str in ("explicit", "questionable", "sensitive"):
+            fallback_chain = ["yandere", "e621", "danbooru", "safebooru"]
+        else:
+            fallback_chain = ["danbooru", "safebooru", "yandere", "konachan"]
+
+        for fb_site in fallback_chain:
+            if fb_site == site:
+                continue
+            try:
+                fb_client = get_client(fb_site, custom_cfg=custom_cfg)
+                if count == 1:
+                    fb_single = await fb_client.random_post(
+                        tags=include_list,
+                        exclude_tags=exclude_list,
+                        rating=rating,
+                        min_score=min_score if fb_site == "danbooru" else min(min_score, 10),
+                    )
+                    if fb_single:
+                        unique_candidates.append(fb_single)
+                        seen_ids.add(str(fb_single.id))
+                else:
+                    fb_posts = await fb_client.random_posts(
+                        count=count,
+                        tags=include_list,
+                        exclude_tags=exclude_list,
+                        rating=rating,
+                        min_score=min_score if fb_site == "danbooru" else min(min_score, 10),
+                    )
+                    for p in fb_posts:
+                        if isinstance(p, BooruPost) and str(p.id) not in seen_ids:
+                            seen_ids.add(str(p.id))
+                            unique_candidates.append(p)
+
+                if unique_candidates:
+                    print(f"[Booru Tags Gacha] Auto-fallback activated: switched from {site} to {fb_site} ({len(unique_candidates)} post(s) found)")
+                    active_site = fb_site
+                    client = fb_client
+                    break
+            except Exception as fb_err:
+                print(f"[Booru Tags Gacha] Fallback attempt ({fb_site}) failed: {fb_err}")
+
     # Fallback / Retry: if we didn't get enough unique posts, request more
     if len(unique_candidates) < count:
         retries = 0
-        while len(unique_candidates) < count and retries < 2:
+        while len(unique_candidates) < count and retries < 3:
             retries += 1
             needed = count - len(unique_candidates)
             try:
-                if count == 1:
-                    more_p = await client.random_post(
-                        tags=include_list,
-                        exclude_tags=exclude_list,
-                        rating=rating,
-                        min_score=min_score,
-                    )
-                    more_list = [more_p] if more_p else []
-                else:
-                    more_list = await client.random_posts(
-                        count=max(needed * 2, 4),
-                        tags=include_list,
-                        exclude_tags=exclude_list,
-                        rating=rating,
-                        min_score=min_score,
-                    )
+                more_list = await client.random_posts(
+                    count=max(needed * 2, 4),
+                    tags=include_list,
+                    exclude_tags=exclude_list,
+                    rating=rating,
+                    min_score=max(0, min_score - 5 * retries),
+                )
                 for p in more_list:
                     if isinstance(p, BooruPost):
                         pid = str(p.id)
@@ -302,7 +339,7 @@ async def pull_gacha(
 
     # First pass: prefer candidates not seen in the current session
     for p in unique_candidates:
-        key = (site, str(p.id))
+        key = (active_site, str(p.id))
         if key not in _SEEN_POSTS:
             _SEEN_POSTS.add(key)
             selected_posts.append(p)
@@ -310,11 +347,10 @@ async def pull_gacha(
                 break
 
     # Second pass: if some candidates were previously seen, still fill up to count
-    # so that the current batch is ALWAYS filled with distinct posts!
     if len(selected_posts) < count:
         for p in unique_candidates:
             if p not in selected_posts:
-                _SEEN_POSTS.add((site, str(p.id)))
+                _SEEN_POSTS.add((active_site, str(p.id)))
                 selected_posts.append(p)
                 if len(selected_posts) >= count:
                     break
@@ -323,20 +359,33 @@ async def pull_gacha(
     if not selected_posts:
         selected_posts = unique_candidates[:count]
 
+    # If count > len(selected_posts), cycle posts to reach count, but diversify tags per slot below
+    while len(selected_posts) < count:
+        selected_posts.append(unique_candidates[len(selected_posts) % len(unique_candidates)])
+
     # Prevent _SEEN_POSTS from accumulating indefinitely
     if len(_SEEN_POSTS) > 1000:
         _SEEN_POSTS.clear()
 
     # 3. Build card results (skip thumbnail network I/O if fetch_images is False)
-    async def _build_card(post: BooruPost) -> GachaPullResult:
+    async def _build_card(idx: int, post: BooruPost) -> GachaPullResult:
         img = None
         if fetch_images:
             img = await fetch_image(post.preview_url, client.image_headers(post.preview_url))
             if not img and post.file_url and post.file_url != post.preview_url:
                 img = await fetch_image(post.file_url, client.image_headers(post.file_url))
-        return GachaPullResult(post, site, img, fmt_config)
 
-    card_tasks = [_build_card(p) for p in selected_posts]
+        # If this post was duplicated across batch slots, randomize its tag sample so prompts remain distinct
+        card_cfg = fmt_config
+        if idx >= len(unique_candidates):
+            card_cfg = copy.copy(fmt_config)
+            card_cfg.random_tag_sample = True
+            if card_cfg.max_general_tags == 0 and len(post.tags_general) > 5:
+                card_cfg.max_general_tags = max(int(len(post.tags_general) * 0.85), 3)
+
+        return GachaPullResult(post, active_site, img, card_cfg)
+
+    card_tasks = [_build_card(i, p) for i, p in enumerate(selected_posts)]
     results = await asyncio.gather(*card_tasks)
 
     return list(results)

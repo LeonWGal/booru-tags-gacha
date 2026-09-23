@@ -48,7 +48,7 @@ DEFAULT_PRESETS: dict[str, dict[str, Any]] = {
         "strip_tags_enable": True,
     },
     "NSFW (Explicit)": {
-        "site": SITE_GELBOORU,
+        "site": SITE_YANDERE,
         "include": "1girl, solo",
         "exclude": "loli, shota, ai_generated, bad anatomy",
         "rating": "explicit",

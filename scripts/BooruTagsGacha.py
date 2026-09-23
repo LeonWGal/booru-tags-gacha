@@ -974,6 +974,17 @@ class BooruTagsGachaScript(scripts.Script):
 
         if not results:
             print(f"[Booru Tags Gacha] No posts matched criteria for Auto-Gacha ({site_key})")
+            import random
+            base_seed = getattr(p, "seed", -1)
+            try:
+                base_seed_int = int(base_seed)
+            except (ValueError, TypeError):
+                base_seed_int = -1
+            if base_seed_int in (-1, None):
+                p.all_seeds = [random.randint(1, 2147483647) for _ in range(total_images)]
+            else:
+                p.all_seeds = [base_seed_int + i for i in range(total_images)]
+            p.seeds = p.all_seeds[:batch_size]
             return
 
         all_prompts = list(getattr(p, "all_prompts", []))
@@ -1028,41 +1039,79 @@ class BooruTagsGachaScript(scripts.Script):
         p.negative_prompt = all_neg_prompts[0]
         p.all_negative_prompts = all_neg_prompts
 
+        # Update initial batch slice
+        p.prompts = all_prompts[:batch_size]
+        p.negative_prompts = all_neg_prompts[:batch_size]
+
         # Update main prompt references
         p.main_prompt = all_prompts[0]
         if hasattr(p, "main_negative_prompt"):
             p.main_negative_prompt = all_neg_prompts[0]
 
         # Support Hires Fix prompts
-        if getattr(p, "enable_hr", False):
-            if hasattr(p, "all_hr_prompts"):
-                p.all_hr_prompts = list(all_prompts)
-            if hasattr(p, "hr_prompt"):
-                p.hr_prompt = all_prompts[0]
-            if hasattr(p, "all_hr_negative_prompts"):
-                p.all_hr_negative_prompts = list(all_neg_prompts)
-            if hasattr(p, "hr_negative_prompt"):
-                p.hr_negative_prompt = all_neg_prompts[0]
+        if hasattr(p, "all_hr_prompts"):
+            p.all_hr_prompts = list(all_prompts)
+        if hasattr(p, "hr_prompt"):
+            p.hr_prompt = all_prompts[0]
+        if hasattr(p, "all_hr_negative_prompts"):
+            p.all_hr_negative_prompts = list(all_neg_prompts)
+        if hasattr(p, "hr_negative_prompt"):
+            p.hr_negative_prompt = all_neg_prompts[0]
 
         if hasattr(p, "_all_prompts_c"):
             p._all_prompts_c = list(all_prompts)
         if hasattr(p, "_all_negative_prompts_c"):
             p._all_negative_prompts_c = list(all_neg_prompts)
 
-        # Synchronize and diversify seeds across the batch
-        if hasattr(p, "all_seeds"):
-            seeds_list = list(p.all_seeds)
-            if len(seeds_list) < total_images:
-                base_seed = seeds_list[0] if seeds_list else int(getattr(p, "seed", 0) or 0)
-                p.all_seeds = [base_seed + i for i in range(total_images)]
-            elif len(seeds_list) > 1 and len(set(seeds_list)) == 1 and getattr(p, "subseed_strength", 0) == 0:
-                p.all_seeds = [seeds_list[0] + i for i in range(len(seeds_list))]
+        # Strictly diversify seeds across every single image in the batch
+        import random
+        base_seed = getattr(p, "seed", -1)
+        try:
+            base_seed_int = int(base_seed)
+        except (ValueError, TypeError):
+            base_seed_int = -1
 
-        if hasattr(p, "all_subseeds"):
-            subseeds_list = list(p.all_subseeds)
-            if len(subseeds_list) < total_images:
-                base_subseed = subseeds_list[0] if subseeds_list else int(getattr(p, "subseed", 0) or 0)
-                p.all_subseeds = [base_subseed + i for i in range(total_images)]
+        if base_seed_int in (-1, None):
+            p.all_seeds = [random.randint(1, 2147483647) for _ in range(total_images)]
+            p.seed = p.all_seeds[0]
+        else:
+            p.all_seeds = [base_seed_int + i for i in range(total_images)]
+
+        base_subseed = getattr(p, "subseed", -1)
+        try:
+            base_sub_int = int(base_subseed)
+        except (ValueError, TypeError):
+            base_sub_int = -1
+
+        if base_sub_int in (-1, None):
+            p.all_subseeds = [random.randint(1, 2147483647) for _ in range(total_images)]
+            p.subseed = p.all_subseeds[0]
+        else:
+            p.all_subseeds = [base_sub_int + i for i in range(total_images)]
+
+        p.seeds = p.all_seeds[:batch_size]
+        p.subseeds = p.all_subseeds[:batch_size]
+
+    def process_batch(self, p, *args, **kwargs):
+        """Ensure batch-level prompts and seeds match the current iteration."""
+        batch_num = kwargs.get("batch_number", getattr(p, "iteration", 0))
+        batch_size = max(getattr(p, "batch_size", 1) or 1, 1)
+        start_idx = batch_num * batch_size
+        end_idx = start_idx + batch_size
+
+        if hasattr(p, "all_prompts") and len(p.all_prompts) >= end_idx:
+            p.prompts = p.all_prompts[start_idx:end_idx]
+        if hasattr(p, "all_negative_prompts") and len(p.all_negative_prompts) >= end_idx:
+            p.negative_prompts = p.all_negative_prompts[start_idx:end_idx]
+        if hasattr(p, "all_seeds") and len(p.all_seeds) >= end_idx:
+            p.seeds = p.all_seeds[start_idx:end_idx]
+        if hasattr(p, "all_subseeds") and len(p.all_subseeds) >= end_idx:
+            p.subseeds = p.all_subseeds[start_idx:end_idx]
+        if getattr(p, "enable_hr", False):
+            if hasattr(p, "all_hr_prompts") and len(p.all_hr_prompts) >= end_idx:
+                p.hr_prompts = p.all_hr_prompts[start_idx:end_idx]
+            if hasattr(p, "all_hr_negative_prompts") and len(p.all_hr_negative_prompts) >= end_idx:
+                p.hr_negative_prompts = p.all_hr_negative_prompts[start_idx:end_idx]
 
 
 def on_ui_settings():

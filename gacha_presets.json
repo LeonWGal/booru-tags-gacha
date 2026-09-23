@@ -1,6 +1,6 @@
 {
   "Character (1girl)": {
-    "site": "gelbooru",
+    "site": "yandere",
     "rating": "explicit",
     "min_score": 20,
     "include": "",
@@ -34,7 +34,7 @@
     "strip_tags_enable": true
   },
   "NSFW (Explicit)": {
-    "site": "gelbooru",
+    "site": "yandere",
     "rating": "explicit",
     "min_score": 15,
     "include": "",
