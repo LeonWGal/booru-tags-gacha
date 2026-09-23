@@ -282,8 +282,8 @@ class BooruTagsGachaScript(scripts.Script):
                 with gr.Row():
                     strip_tags_box = gr.Textbox(
                         label="Strip Tags from Prompt",
-                        placeholder="e.g. text, censored, watermark",
-                        value=current_preset.get("strip_tags", "text, censored, watermark"),
+                        placeholder="e.g. loli, shota, ai generated",
+                        value=current_preset.get("strip_tags", "loli, shota, ai generated"),
                         scale=3,
                     )
                     strip_tags_chk = gr.Checkbox(
@@ -309,7 +309,7 @@ class BooruTagsGachaScript(scripts.Script):
         def _get_format_config(
             inc_gen, inc_char, inc_copy, inc_art, inc_meta,
             rep_under, esc_par, art_fmt, art_wt, max_tags, prefix, suffix,
-            strip_tags="text, censored, watermark", strip_tags_enable=True
+            strip_tags="loli, shota, ai generated", strip_tags_enable=True
         ):
             blacklist_raw = getattr(shared.opts, "gpr_universalBlacklist", "") or ""
             bl_list = [t.strip() for t in blacklist_raw.split(',') if t.strip()]
@@ -350,7 +350,7 @@ class BooruTagsGachaScript(scripts.Script):
                 p.get("artist_format", "raw"),
                 p.get("artist_weight", 1.1),
                 p.get("max_general_tags", 25),
-                p.get("strip_tags", "text, censored, watermark"),
+                p.get("strip_tags", "loli, shota, ai generated"),
                 p.get("strip_tags_enable", True),
             )
 
@@ -371,7 +371,7 @@ class BooruTagsGachaScript(scripts.Script):
         def _auto_save_active(
             preset_name, site_lbl, rating_val, score_val, inc_val, exc_val,
             inc_gen, inc_char, inc_copy, inc_art, inc_meta,
-            art_fmt, art_wt, max_tags, strip_tags="text, censored, watermark", strip_tags_enable=True
+            art_fmt, art_wt, max_tags, strip_tags="loli, shota, ai generated", strip_tags_enable=True
         ):
             if not preset_name:
                 return
@@ -987,7 +987,7 @@ class BooruTagsGachaScript(scripts.Script):
         prefix = str(prefix or "").strip()
         suffix = str(suffix or "").strip()
 
-        strip_tags_str = str(strip_tags_box if strip_tags_box is not None else getattr(shared.opts, "gpr_strip_tags", "text, censored, watermark"))
+        strip_tags_str = str(strip_tags_box if strip_tags_box is not None else getattr(shared.opts, "gpr_strip_tags", "loli, shota, ai generated"))
         strip_tags_enabled = bool(strip_tags_chk if strip_tags_chk is not None else getattr(shared.opts, "gpr_strip_tags_enable", True))
 
         blacklist_raw = getattr(shared.opts, "gpr_universalBlacklist", "") or ""
@@ -1223,7 +1223,7 @@ def on_ui_settings():
             gr.Textbox,
         ).info("Comma-separated tags to always exclude from booru search rolls."),
         "gpr_strip_tags": shared.OptionInfo(
-            "text, censored, watermark",
+            "loli, shota, ai generated",
             "Tags to Strip from Prompt",
             gr.Textbox,
         ).info("Comma-separated tags to strip from prompts during generation or prompt transfer."),

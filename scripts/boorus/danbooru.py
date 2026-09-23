@@ -56,34 +56,11 @@ class DanbooruClient(BooruClient):
         rating_map = {"safe": "g", "sensitive": "s", "questionable": "q", "explicit": "e"}
         norm_rating_char = rating_map.get(rating, None) if (rating and rating != "any") else None
 
-        is_authenticated = bool(self._username and self._api_key)
-
-        if is_authenticated:
-            # Authenticated users: Danbooru accepts up to 40 tags
-            limit = min(max(count * 3, 20), 100)
-            query_terms = [f"random:{limit}"]
-            if norm_rating_char:
-                query_terms.append(f"rating:{norm_rating_char}")
-            if min_score > 0:
-                query_terms.append(f"score:>={min_score}")
-            query_terms.extend(include)
-            for ex in excluded:
-                query_terms.append(f"-{ex}")
-
-            params = {
-                "tags": " ".join(query_terms),
-                "limit": limit,
-            }
-            data = await self._request("/posts.json", params)
-            if isinstance(data, list) and data:
-                posts = [self._to_post(p) for p in data if isinstance(p, dict) and p.get("id")]
-                random.shuffle(posts)
-                return posts[:count]
-            return []
-
-        # Anonymous users: Danbooru STRICTLY limits queries to MAX 2 tags!
-        # Use random:N to get candidate batch quickly without hitting SQL table-scan timeout
-        fetch_limit = min(max(count * 4, 30), 100)
+        # Danbooru limits queries to MAX 2 tags for free/member users (even with API key).
+        # We must use random:N to get a batch quickly, plus ONE include tag or rating.
+        # We filter the rest locally to guarantee we don't hit the 422 Unprocessable Entity error.
+        
+        fetch_limit = min(max(count * 6, 40), 100)
         query_terms = [f"random:{fetch_limit}"]
         if include:
             query_terms.append(include[0])
