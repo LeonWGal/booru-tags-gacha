@@ -50,7 +50,7 @@ def _run_async(coro):
 
 class BooruTagsGachaScript(scripts.Script):
     section = "sampler"
-    sorting_priority = -100
+    sorting_priority = 100  # Must run AFTER Dynamic Prompts (0) to prevent p.all_prompts override
 
     def __init__(self) -> None:
         super().__init__()
