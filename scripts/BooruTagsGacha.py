@@ -203,9 +203,15 @@ class BooruTagsGachaScript(scripts.Script):
             # Primary Auto-Gacha Controls (Prominently placed, remembered across sessions)
             with gr.Row(elem_classes=["gacha-autogacha-controls-row"]):
                 auto_gacha_chk = gr.Checkbox(
-                    label="⚡ Auto-Gacha on Generate (Unique random card for every image in batch)",
+                    label="⚡ Auto-Gacha on Generate",
                     value=bool(getattr(shared.opts, "gpr_auto_gacha_enable", False)),
-                    scale=2,
+                    scale=1,
+                )
+                auto_batch_mode_dropdown = gr.Dropdown(
+                    label="Batch Mode",
+                    choices=["Unique prompt per image", "Same prompt for entire batch"],
+                    value=str(getattr(shared.opts, "gpr_auto_gacha_batch_mode", "Unique prompt per image")),
+                    scale=1,
                 )
                 auto_mode_dropdown = gr.Dropdown(
                     label="Auto-Gacha Mode",
@@ -825,7 +831,7 @@ class BooruTagsGachaScript(scripts.Script):
                 except Exception:
                     pass
 
-                gr.Info("Inserted [gacha] into prompt and enabled Auto-Gacha! Each image in your batch will receive a unique random card.")
+                gr.Info("Inserted [gacha] into prompt and enabled Auto-Gacha!")
                 return new_prompt, True
 
             if target_prompt is not None:
@@ -867,9 +873,10 @@ class BooruTagsGachaScript(scripts.Script):
                     outputs=[target_neg_prompt],
                 )
 
-            def _save_auto_gacha_settings(enabled, mode):
+            def _save_auto_gacha_settings(enabled, batch_mode, mode):
                 try:
                     shared.opts.set("gpr_auto_gacha_enable", bool(enabled))
+                    shared.opts.set("gpr_auto_gacha_batch_mode", str(batch_mode))
                     shared.opts.set("gpr_auto_gacha_mode", str(mode))
                     shared.opts.save(shared.config_filename)
                 except Exception:
@@ -877,19 +884,25 @@ class BooruTagsGachaScript(scripts.Script):
 
             auto_gacha_chk.change(
                 fn=_save_auto_gacha_settings,
-                inputs=[auto_gacha_chk, auto_mode_dropdown],
+                inputs=[auto_gacha_chk, auto_batch_mode_dropdown, auto_mode_dropdown],
+                outputs=None,
+                show_progress="hidden",
+            )
+            auto_batch_mode_dropdown.change(
+                fn=_save_auto_gacha_settings,
+                inputs=[auto_gacha_chk, auto_batch_mode_dropdown, auto_mode_dropdown],
                 outputs=None,
                 show_progress="hidden",
             )
             auto_mode_dropdown.change(
                 fn=_save_auto_gacha_settings,
-                inputs=[auto_gacha_chk, auto_mode_dropdown],
+                inputs=[auto_gacha_chk, auto_batch_mode_dropdown, auto_mode_dropdown],
                 outputs=None,
                 show_progress="hidden",
             )
 
         return [
-            auto_gacha_chk, auto_mode_dropdown, auto_neg_chk,
+            auto_gacha_chk, auto_batch_mode_dropdown, auto_mode_dropdown, auto_neg_chk,
             site_dropdown, rating_dropdown, min_score_number,
             include_tags_box, exclude_tags_box,
             inc_general_chk, inc_char_chk, inc_copy_chk, inc_artist_chk, inc_meta_chk,
@@ -913,6 +926,7 @@ class BooruTagsGachaScript(scripts.Script):
         self,
         p,
         auto_gacha_chk,
+        auto_batch_mode_dropdown,
         auto_mode_dropdown,
         auto_neg_chk,
         site_lbl,
@@ -947,6 +961,7 @@ class BooruTagsGachaScript(scripts.Script):
 
         # Safe argument extraction with sensible defaults from active settings
         auto_gacha_chk = bool(auto_gacha_chk) if auto_gacha_chk is not None else False
+        auto_batch_mode_dropdown = str(auto_batch_mode_dropdown or "Unique prompt per image")
         auto_mode_dropdown = str(auto_mode_dropdown or "Replace Full Prompt")
         auto_neg_chk = bool(auto_neg_chk) if auto_neg_chk is not None else False
 
@@ -1015,11 +1030,13 @@ class BooruTagsGachaScript(scripts.Script):
         n_iter = max(getattr(p, "n_iter", 1) or 1, 1)
         total_images = batch_size * n_iter
 
+        cards_to_pull = 1 if auto_batch_mode_dropdown == "Same prompt for entire batch" else total_images
+
         # Roll posts for the batch without downloading image thumbnails (ultra fast)
         results = _run_async(
             pull_gacha(
                 site=site_key,
-                count=total_images,
+                count=cards_to_pull,
                 include=inc_tags,
                 exclude=exc_tags,
                 rating=rating_val,
