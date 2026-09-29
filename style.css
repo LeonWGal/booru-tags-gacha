@@ -653,3 +653,28 @@
     width: 100% !important;
     margin-top: 10px !important;
 }
+
+/* Style BTG Accordion Header like Lobe Theme Aspect Ratio */
+.booru-gacha-container.sd-ar-panel-compact > .label-wrap {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin-bottom: 0 !important;
+    border: none !important;
+    background: transparent !important;
+}
+.booru-gacha-container.sd-ar-panel-compact {
+    border: 1px solid var(--gf-border) !important;
+    background: var(--gf-bg-card) !important;
+    border-radius: var(--gf-radius) !important;
+    padding: 10px 12px !important;
+    margin-top: 10px !important;
+}
+.booru-gacha-container.sd-ar-panel-compact > .label-wrap > span {
+    font-family: var(--gf-font-mono, monospace) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--gf-text-primary) !important;
+}

@@ -77,7 +77,7 @@ class BooruTagsGachaScript(scripts.Script):
         history_state = gr.State([])
         history_idx_state = gr.State(-1)
 
-        with gr.Accordion(EXTENSION_NAME, open=False, elem_classes=["booru-gacha-container"]):
+        with gr.Accordion(EXTENSION_NAME, open=False, elem_classes=["booru-gacha-container", "sd-ar-panel-compact"]):
             # Top Preset Manager Bar
             with gr.Row(equal_height=True):
                 preset_dropdown = gr.Dropdown(
