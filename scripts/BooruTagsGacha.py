@@ -1178,13 +1178,29 @@ class BooruTagsGachaScript(scripts.Script):
         end_idx = start_idx + batch_size
 
         if hasattr(p, "all_prompts") and len(p.all_prompts) > start_idx:
-            p.prompts = p.all_prompts[start_idx:min(end_idx, len(p.all_prompts))]
+            new_prompts = p.all_prompts[start_idx:min(end_idx, len(p.all_prompts))]
+            p.prompts = new_prompts
+            if "prompts" in kwargs and isinstance(kwargs["prompts"], list):
+                for i in range(min(len(kwargs["prompts"]), len(new_prompts))):
+                    kwargs["prompts"][i] = new_prompts[i]
+
         if hasattr(p, "all_negative_prompts") and len(p.all_negative_prompts) > start_idx:
-            p.negative_prompts = p.all_negative_prompts[start_idx:min(end_idx, len(p.all_negative_prompts))]
+            new_neg = p.all_negative_prompts[start_idx:min(end_idx, len(p.all_negative_prompts))]
+            p.negative_prompts = new_neg
+
         if hasattr(p, "all_seeds") and len(p.all_seeds) > start_idx:
-            p.seeds = p.all_seeds[start_idx:min(end_idx, len(p.all_seeds))]
+            new_seeds = p.all_seeds[start_idx:min(end_idx, len(p.all_seeds))]
+            p.seeds = new_seeds
+            if "seeds" in kwargs and isinstance(kwargs["seeds"], list):
+                for i in range(min(len(kwargs["seeds"]), len(new_seeds))):
+                    kwargs["seeds"][i] = new_seeds[i]
+
         if hasattr(p, "all_subseeds") and len(p.all_subseeds) > start_idx:
-            p.subseeds = p.all_subseeds[start_idx:min(end_idx, len(p.all_subseeds))]
+            new_subseeds = p.all_subseeds[start_idx:min(end_idx, len(p.all_subseeds))]
+            p.subseeds = new_subseeds
+            if "subseeds" in kwargs and isinstance(kwargs["subseeds"], list):
+                for i in range(min(len(kwargs["subseeds"]), len(new_subseeds))):
+                    kwargs["subseeds"][i] = new_subseeds[i]
         if getattr(p, "enable_hr", False):
             if hasattr(p, "all_hr_prompts") and len(p.all_hr_prompts) > start_idx:
                 p.hr_prompts = p.all_hr_prompts[start_idx:min(end_idx, len(p.all_hr_prompts))]
