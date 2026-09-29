@@ -678,3 +678,75 @@
     font-weight: 600 !important;
     color: var(--gf-text-primary) !important;
 }
+/* Overrides for Lobe Theme Aspect Ratio UI/UX */
+.booru-gacha-container .gacha-pull-btn,
+.booru-gacha-container .gacha-action-btn {
+    background: var(--gf-bg-card-secondary) !important;
+    border: 1px solid var(--gf-border) !important;
+    color: var(--gf-text-primary) !important;
+    border-radius: var(--gf-radius-sm) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+    height: 32px !important;
+    padding: 0 12px !important;
+}
+
+.booru-gacha-container .gacha-pull-btn:hover,
+.booru-gacha-container .gacha-action-btn:hover {
+    border-color: var(--gf-primary) !important;
+    color: var(--gf-primary) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+}
+
+.booru-gacha-container .gacha-pull-btn-10x {
+    /* Slight tint for SSR */
+    border-color: #d97706 !important;
+    color: #d97706 !important;
+}
+.booru-gacha-container .gacha-pull-btn-10x:hover {
+    background: #d97706 !important;
+    color: #fff !important;
+}
+
+.booru-gacha-container .gacha-pull-btn-cancel {
+    border-color: #dc2626 !important;
+    color: #dc2626 !important;
+}
+.booru-gacha-container .gacha-pull-btn-cancel:hover {
+    background: #dc2626 !important;
+    color: #fff !important;
+}
+
+.booru-gacha-container .gacha-gacha-btn {
+    background: var(--gf-primary) !important;
+    color: #121214 !important;
+    border: 1px solid var(--gf-primary) !important;
+}
+.booru-gacha-container .gacha-sub-btn,
+.booru-gacha-container .gacha-insert-btn {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    color: var(--gf-text-secondary) !important;
+    font-size: 11.5px !important;
+    height: 28px !important;
+}
+.booru-gacha-container .gacha-sub-btn:hover,
+.booru-gacha-container .gacha-insert-btn:hover {
+    background: var(--gf-bg-card-secondary) !important;
+    border: 1px solid var(--gf-border) !important;
+    color: var(--gf-text-primary) !important;
+}
+.booru-gacha-container .gacha-gacha-btn {
+    background: var(--gf-primary) !important;
+    color: #121214 !important;
+    border: 1px solid var(--gf-primary) !important;
+}
+.booru-gacha-container .gacha-tag-chips-container {
+    background: var(--gf-bg-card) !important;
+    border: 1px solid var(--gf-border) !important;
+    border-radius: var(--gf-radius) !important;
+    padding: 8px !important;
+}

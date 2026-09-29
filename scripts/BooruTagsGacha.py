@@ -79,58 +79,61 @@ class BooruTagsGachaScript(scripts.Script):
 
         with gr.Accordion(EXTENSION_NAME, open=False, elem_classes=["booru-gacha-container", "sd-ar-panel-compact"]):
             # Top Preset Manager Bar
-            with gr.Row(equal_height=True):
-                preset_dropdown = gr.Dropdown(
-                    label="Preset",
-                    choices=all_preset_names,
-                    value=default_preset_name,
-                    scale=4,
-                )
-                save_preset_btn = gr.Button("Save", size="sm", scale=1)
-                new_preset_btn = gr.Button("New", size="sm", scale=1)
-                del_preset_btn = gr.Button("Delete", size="sm", scale=1)
+            with gr.Group():
+                with gr.Row(equal_height=True):
+                    preset_dropdown = gr.Dropdown(
+                        label="Preset",
+                        choices=all_preset_names,
+                        value=default_preset_name,
+                        scale=4,
+                    )
+                    save_preset_btn = gr.Button("Save", size="sm", scale=1)
+                    new_preset_btn = gr.Button("New", size="sm", scale=1)
+                    del_preset_btn = gr.Button("Delete", size="sm", scale=1)
 
             # Search & Filter Controls
-            with gr.Row():
-                site_dropdown = gr.Dropdown(
-                    label="Site",
-                    choices=[label for label, _ in SITE_CHOICES],
-                    value=SITE_LABEL_BY_KEY.get(current_preset.get("site", DEFAULT_SITE), "Danbooru"),
-                    scale=2,
-                )
-                rating_dropdown = gr.Dropdown(
-                    label="Rating",
-                    choices=["any", "safe", "sensitive", "questionable", "explicit"],
-                    value=current_preset.get("rating", "safe"),
-                    scale=1,
-                )
-                min_score_number = gr.Number(
-                    label="Min Score",
-                    value=current_preset.get("min_score", 0),
-                    precision=0,
-                    scale=1,
-                )
+            with gr.Group():
+                with gr.Row():
+                    site_dropdown = gr.Dropdown(
+                        label="Site",
+                        choices=[label for label, _ in SITE_CHOICES],
+                        value=SITE_LABEL_BY_KEY.get(current_preset.get("site", DEFAULT_SITE), "Danbooru"),
+                        scale=2,
+                    )
+                    rating_dropdown = gr.Dropdown(
+                        label="Rating",
+                        choices=["any", "safe", "sensitive", "questionable", "explicit"],
+                        value=current_preset.get("rating", "safe"),
+                        scale=1,
+                    )
+                    min_score_number = gr.Number(
+                        label="Min Score",
+                        value=current_preset.get("min_score", 0),
+                        precision=0,
+                        scale=1,
+                    )
 
-            with gr.Row():
-                include_tags_box = gr.Textbox(
-                    label="Include Tags",
-                    value=current_preset.get("include", ""),
-                    placeholder="e.g.: 1girl, solo, blue_hair, scenic",
-                    scale=1,
-                )
-                exclude_tags_box = gr.Textbox(
-                    label="Exclude Tags",
-                    value=current_preset.get("exclude", ""),
-                    placeholder="e.g.: censored, text, watermark, bad anatomy",
-                    scale=1,
-                )
+                with gr.Row():
+                    include_tags_box = gr.Textbox(
+                        label="Include Tags",
+                        value=current_preset.get("include", ""),
+                        placeholder="e.g.: 1girl, solo, blue_hair, scenic",
+                        scale=1,
+                    )
+                    exclude_tags_box = gr.Textbox(
+                        label="Exclude Tags",
+                        value=current_preset.get("exclude", ""),
+                        placeholder="e.g.: censored, text, watermark, bad anatomy",
+                        scale=1,
+                    )
 
             # Gacha Pull Buttons
-            with gr.Row():
-                pull_1x_btn = gr.Button("Roll 1x", elem_classes=["gacha-pull-btn", "gacha-pull-btn-1x"])
-                pull_5x_btn = gr.Button("Lucky 5x", elem_classes=["gacha-pull-btn", "gacha-pull-btn-5x"])
-                pull_10x_btn = gr.Button("Multi 10x (SSR)", elem_classes=["gacha-pull-btn", "gacha-pull-btn-10x"])
-                cancel_pull_btn = gr.Button("Cancel", elem_classes=["gacha-pull-btn", "gacha-pull-btn-cancel"])
+            with gr.Group():
+                with gr.Row():
+                    pull_1x_btn = gr.Button("Roll 1x", elem_classes=["gacha-pull-btn", "gacha-pull-btn-1x"])
+                    pull_5x_btn = gr.Button("Lucky 5x", elem_classes=["gacha-pull-btn", "gacha-pull-btn-5x"])
+                    pull_10x_btn = gr.Button("Multi 10x (SSR)", elem_classes=["gacha-pull-btn", "gacha-pull-btn-10x"])
+                    cancel_pull_btn = gr.Button("Cancel", elem_classes=["gacha-pull-btn", "gacha-pull-btn-cancel"])
 
             # Multi-Pull Stats Banner & Selected HUD
             stats_banner_html = gr.HTML(value="", elem_classes=["gacha-stats-wrap"])
@@ -182,17 +185,18 @@ class BooruTagsGachaScript(scripts.Script):
                 copyright_tags_box = gr.Textbox(label="Series / Copyright", show_copy_button=True, scale=1)
 
             # Quick Prompt Actions
-            with gr.Row():
-                insert_gacha_btn = gr.Button("⚡ Insert [gacha] to Prompt", variant="primary", elem_classes=["gacha-action-btn", "gacha-gacha-btn"])
-                replace_prompt_btn = gr.Button("Replace Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
-                append_prompt_btn = gr.Button("Append Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
-                prepend_prompt_btn = gr.Button("Prepend Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
-                add_negative_btn = gr.Button("To Negative", elem_classes=["gacha-action-btn", "gacha-insert-btn", "gacha-neg-btn"])
+            with gr.Group():
+                with gr.Row():
+                    insert_gacha_btn = gr.Button("⚡ Insert [gacha]", variant="primary", elem_classes=["gacha-action-btn", "gacha-gacha-btn"])
+                    replace_prompt_btn = gr.Button("Replace Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
+                    append_prompt_btn = gr.Button("Append Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
+                    prepend_prompt_btn = gr.Button("Prepend Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
+                    add_negative_btn = gr.Button("To Negative", elem_classes=["gacha-action-btn", "gacha-insert-btn", "gacha-neg-btn"])
 
-            with gr.Row():
-                insert_artist_btn = gr.Button("Insert Artist", size="sm", elem_classes=["gacha-sub-btn"])
-                insert_character_btn = gr.Button("Insert Character", size="sm", elem_classes=["gacha-sub-btn"])
-                fav_post_btn = gr.Button("Save to Favorites", size="sm", elem_classes=["gacha-sub-btn", "gacha-fav-btn"])
+                with gr.Row():
+                    insert_artist_btn = gr.Button("Insert Artist", size="sm", elem_classes=["gacha-sub-btn"])
+                    insert_character_btn = gr.Button("Insert Character", size="sm", elem_classes=["gacha-sub-btn"])
+                    fav_post_btn = gr.Button("Save to Favorites", size="sm", elem_classes=["gacha-sub-btn", "gacha-fav-btn"])
 
             # History & Navigation Row
             with gr.Row():
