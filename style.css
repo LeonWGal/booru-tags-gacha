@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    Booru Tags Gacha - Modern Solid High-Contrast UI
    Optimized for: Stable Diffusion WebUI & Forge Neo
    Design: Clean Solid Surfaces, Zero Glassmorphism, Perfect Light/Dark Contrast
@@ -644,4 +644,12 @@
     visibility: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;
+}
+
+/* Fix Lobe Theme Neo Grid Compatibility */
+#sampler_selection_txt2img .booru-gacha-container,
+#sampler_selection_img2img .booru-gacha-container {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    margin-top: 10px !important;
 }
