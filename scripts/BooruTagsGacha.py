@@ -826,6 +826,7 @@ class BooruTagsGachaScript(scripts.Script):
                 token = "[gacha]"
                 try:
                     shared.opts.set("gpr_auto_gacha_enable", True)
+                    shared.opts.set("gpr_auto_gacha_mode", "Replace Full Prompt")
                     shared.opts.save(shared.config_filename)
                 except Exception:
                     pass
@@ -863,7 +864,7 @@ class BooruTagsGachaScript(scripts.Script):
                     shared.opts.save(shared.config_filename)
                 except Exception:
                     pass
-                gr.Info("Added [gacha-oa] (Artist Only)! Each batch image will get a unique artist, keeping your scene prompt.")
+                gr.Info("Added [gacha-oa] (Artist Only / Только автор)! Randomizes ONLY the artist; keeping your scene prompt identical.")
                 return new_prompt, True
 
             def _transfer_insert_oc(cur):
@@ -1171,26 +1172,29 @@ class BooruTagsGachaScript(scripts.Script):
             card = results[idx % len(results)]
             cur_prompt = all_prompts[idx]
 
-            # 1. Replace placeholders if present (use card.config to preserve per-slot diversification)
-            updated_prompt, was_replaced = TagFormatter.replace_placeholders(
-                cur_prompt, card.post, card.config
-            )
+            # Priority 1: If Auto-Gacha is ON and mode is "Replace Full Prompt":
+            # Completely replace the prompt for this image with the card's full tags!
+            if auto_gacha_chk and auto_mode_dropdown == "Replace Full Prompt":
+                updated_prompt = card.full_prompt
+            else:
+                # Priority 2: Replace placeholders if present (use card.config to preserve per-slot diversification)
+                updated_prompt, was_replaced = TagFormatter.replace_placeholders(
+                    cur_prompt, card.post, card.config
+                )
 
-            # 2. If no placeholders and Auto-Gacha is enabled
-            if not was_replaced and auto_gacha_chk:
-                tag_string = card.full_prompt
-                if auto_mode_dropdown == "Replace Full Prompt":
-                    updated_prompt = tag_string
-                elif auto_mode_dropdown == "Replace [gacha...] placeholders":
-                    # If cur_prompt matches the un-expanded base prompt or is empty, replace fully per batch item
-                    if not cur_prompt.strip() or cur_prompt == base_prompt:
-                        updated_prompt = tag_string
-                    else:
+                # Priority 3: If no placeholders and Auto-Gacha is enabled
+                if not was_replaced and auto_gacha_chk:
+                    tag_string = card.full_prompt
+                    if auto_mode_dropdown == "Replace [gacha...] placeholders":
+                        # If cur_prompt matches the un-expanded base prompt or is empty, replace fully per batch item
+                        if not cur_prompt.strip() or cur_prompt == base_prompt:
+                            updated_prompt = tag_string
+                        else:
+                            updated_prompt = f"{cur_prompt}, {tag_string}".strip(", ")
+                    elif auto_mode_dropdown == "Append to Prompt":
                         updated_prompt = f"{cur_prompt}, {tag_string}".strip(", ")
-                elif auto_mode_dropdown == "Append to Prompt":
-                    updated_prompt = f"{cur_prompt}, {tag_string}".strip(", ")
-                elif auto_mode_dropdown == "Prepend to Prompt":
-                    updated_prompt = f"{tag_string}, {cur_prompt}".strip(", ")
+                    elif auto_mode_dropdown == "Prepend to Prompt":
+                        updated_prompt = f"{tag_string}, {cur_prompt}".strip(", ")
 
             if fmt_config.strip_tags_enable and fmt_config.blacklist:
                 updated_prompt = TagFormatter.strip_prompt_text(updated_prompt, fmt_config)
@@ -1208,18 +1212,34 @@ class BooruTagsGachaScript(scripts.Script):
         # Guarantee unique batch prompts when 'Unique prompt per image' is selected
         if auto_batch_mode_dropdown == "Unique prompt per image" and total_images > 1:
             seen_prompts: set[str] = set()
+            first_tags = set(t.strip().lower() for t in all_prompts[0].split(",") if t.strip())
             for idx in range(total_images):
                 pr = all_prompts[idx]
-                if pr in seen_prompts:
-                    parts = [pt.strip() for pt in pr.split(",") if pt.strip()]
-                    if len(parts) > 4:
-                        import random
-                        head = parts[:3]
-                        tail = parts[3:]
-                        random.Random(idx * 31337 + len(tail)).shuffle(tail)
-                        all_prompts[idx] = ", ".join(head + tail)
+                curr_tags = set(t.strip().lower() for t in pr.split(",") if t.strip())
+                is_duplicate = pr in seen_prompts
+                is_near_identical = False
+                if idx > 0 and len(first_tags) > 4 and len(curr_tags) > 4:
+                    overlap = len(first_tags.intersection(curr_tags)) / max(len(first_tags), len(curr_tags))
+                    if overlap >= 0.70:
+                        is_near_identical = True
+
+                if is_duplicate or is_near_identical:
+                    # Slot is identical or nearly identical (>70% common tags) to an earlier slot.
+                    # If we pulled a distinct card for this slot, use the distinct card's full tags:
+                    if idx < len(results) and results[idx].full_prompt != all_prompts[0]:
+                        all_prompts[idx] = results[idx].full_prompt
                     else:
-                        all_prompts[idx] = f"{pr}, angle variation {idx + 1}"
+                        parts = [pt.strip() for pt in pr.split(",") if pt.strip()]
+                        if len(parts) > 4:
+                            import random
+                            head = parts[:2]
+                            tail = parts[2:]
+                            random.Random(idx * 31337 + len(tail)).shuffle(tail)
+                            take_n = max(int(len(tail) * 0.75), 3)
+                            all_prompts[idx] = ", ".join(head + tail[:take_n])
+                        else:
+                            all_prompts[idx] = f"{pr}, variation {idx + 1}"
+
                 seen_prompts.add(all_prompts[idx])
 
         p.prompt = all_prompts[0]
