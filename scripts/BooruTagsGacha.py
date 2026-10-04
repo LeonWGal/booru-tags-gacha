@@ -187,15 +187,17 @@ class BooruTagsGachaScript(scripts.Script):
             # Quick Prompt Actions
             with gr.Group():
                 with gr.Row():
-                    insert_gacha_btn = gr.Button("⚡ Insert [gacha]", variant="primary", elem_classes=["gacha-action-btn", "gacha-gacha-btn"])
-                    replace_prompt_btn = gr.Button("Replace Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
-                    append_prompt_btn = gr.Button("Append Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
-                    prepend_prompt_btn = gr.Button("Prepend Prompt", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
+                    set_gacha_btn = gr.Button("🎲 Set [gacha] (Full Roll per Image)", variant="primary", elem_classes=["gacha-action-btn", "gacha-gacha-btn"])
+                    insert_gacha_btn = gr.Button("➕ Add [gacha]", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
+                    replace_prompt_btn = gr.Button("Replace with Card Tags", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
+                    append_prompt_btn = gr.Button("Append Card Tags", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
                     add_negative_btn = gr.Button("To Negative", elem_classes=["gacha-action-btn", "gacha-insert-btn", "gacha-neg-btn"])
 
                 with gr.Row():
-                    insert_artist_btn = gr.Button("Insert Artist", size="sm", elem_classes=["gacha-sub-btn"])
-                    insert_character_btn = gr.Button("Insert Character", size="sm", elem_classes=["gacha-sub-btn"])
+                    insert_oa_btn = gr.Button("🎨 [gacha-oa] (Artist Only)", size="sm", elem_classes=["gacha-sub-btn"])
+                    insert_oc_btn = gr.Button("👤 [gacha-oc] (Char Only)", size="sm", elem_classes=["gacha-sub-btn"])
+                    insert_artist_btn = gr.Button("Insert Card Artist", size="sm", elem_classes=["gacha-sub-btn"])
+                    insert_character_btn = gr.Button("Insert Card Char", size="sm", elem_classes=["gacha-sub-btn"])
                     fav_post_btn = gr.Button("Save to Favorites", size="sm", elem_classes=["gacha-sub-btn", "gacha-fav-btn"])
 
             # History & Navigation Row
@@ -303,16 +305,16 @@ class BooruTagsGachaScript(scripts.Script):
                     )
 
             # Placeholders Guide Accordion
-            with gr.Accordion("Auto-Gacha Placeholders Reference", open=False):
+            with gr.Accordion("Auto-Gacha Placeholders Reference / Плейсхолдеры", open=False):
                 gr.Markdown(
-                    "You can insert placeholders into your txt2img/img2img prompt:\n"
-                    "- `[gacha]`: Full formatted tags for the rolled card\n"
-                    "- `[gacha-wa]`: Tags without artist (character, series, general, meta)\n"
-                    "- `[gacha-oa]`: Artist tags only\n"
-                    "- `[gacha-oc]`: Character tags only\n"
-                    "- `[gacha-gen]`: General tags only\n"
-                    "- `[gacha-all]`: All raw tags without filtering\n\n"
-                    "*Tip: Click `⚡ Insert [gacha] to Prompt` to instantly set up multi-batch random rolls.*"
+                    "### 🎲 Режимы плейсхолдеров для генерации (Batch & Multi-prompt)\n"
+                    "- `[gacha]` — **Полный арт (Художник + Персонаж + Теги)**. Каждый кадр в Batch получает полностью случайную уникальную карту!\n"
+                    "- `[gacha-oa]` — **ТОЛЬКО имя автора/художника** (Only Artist). Остальной текст промпта остается общим для всех кадров.\n"
+                    "- `[gacha-wa]` — **Без художника** (персонаж + все общие теги).\n"
+                    "- `[gacha-oc]` — **Только имя персонажа** (Only Character).\n"
+                    "- `[gacha-gen]` — **Только общие теги** (Only General tags).\n"
+                    "- `[gacha-all]` — Все теги без фильтрации.\n\n"
+                    "*Совет: Чтобы получить 4 совершенно разные картинки в батче, нажмите кнопку `🎲 Set [gacha] (Full Roll per Image)` или напишите в окне промпта только `[gacha]`!*"
                 )
 
         # Helper to construct TagFormatConfig from UI values
@@ -820,6 +822,16 @@ class BooruTagsGachaScript(scripts.Script):
                     text = TagFormatter.strip_prompt_text(text, cfg)
                 return text
 
+            def _transfer_set_gacha():
+                token = "[gacha]"
+                try:
+                    shared.opts.set("gpr_auto_gacha_enable", True)
+                    shared.opts.save(shared.config_filename)
+                except Exception:
+                    pass
+                gr.Info("Prompt set to [gacha]! Every image in your batch will receive a unique random roll.")
+                return token, True
+
             def _transfer_insert_gacha(cur):
                 token = "[gacha]"
                 if not cur or not cur.strip():
@@ -835,12 +847,59 @@ class BooruTagsGachaScript(scripts.Script):
                 except Exception:
                     pass
 
-                gr.Info("Inserted [gacha] into prompt and enabled Auto-Gacha!")
+                gr.Info("Appended [gacha] to prompt and enabled Auto-Gacha!")
+                return new_prompt, True
+
+            def _transfer_insert_oa(cur):
+                token = "[gacha-oa]"
+                if not cur or not cur.strip():
+                    new_prompt = token
+                elif token in cur:
+                    new_prompt = cur
+                else:
+                    new_prompt = f"{token}, {cur.strip().lstrip(',')}"
+                try:
+                    shared.opts.set("gpr_auto_gacha_enable", True)
+                    shared.opts.save(shared.config_filename)
+                except Exception:
+                    pass
+                gr.Info("Added [gacha-oa] (Artist Only)! Each batch image will get a unique artist, keeping your scene prompt.")
+                return new_prompt, True
+
+            def _transfer_insert_oc(cur):
+                token = "[gacha-oc]"
+                if not cur or not cur.strip():
+                    new_prompt = token
+                elif token in cur:
+                    new_prompt = cur
+                else:
+                    new_prompt = f"{token}, {cur.strip().lstrip(',')}"
+                try:
+                    shared.opts.set("gpr_auto_gacha_enable", True)
+                    shared.opts.save(shared.config_filename)
+                except Exception:
+                    pass
+                gr.Info("Added [gacha-oc] (Character Only)! Each batch image will get a unique character, keeping your scene prompt.")
                 return new_prompt, True
 
             if target_prompt is not None:
+                set_gacha_btn.click(
+                    fn=_transfer_set_gacha,
+                    inputs=[],
+                    outputs=[target_prompt, auto_gacha_chk],
+                )
                 insert_gacha_btn.click(
                     fn=_transfer_insert_gacha,
+                    inputs=[target_prompt],
+                    outputs=[target_prompt, auto_gacha_chk],
+                )
+                insert_oa_btn.click(
+                    fn=_transfer_insert_oa,
+                    inputs=[target_prompt],
+                    outputs=[target_prompt, auto_gacha_chk],
+                )
+                insert_oc_btn.click(
+                    fn=_transfer_insert_oc,
                     inputs=[target_prompt],
                     outputs=[target_prompt, auto_gacha_chk],
                 )
@@ -852,11 +911,6 @@ class BooruTagsGachaScript(scripts.Script):
                 replace_prompt_btn.click(
                     fn=_transfer_replace,
                     inputs=[full_tags_textbox, strip_tags_box, strip_tags_chk],
-                    outputs=[target_prompt],
-                )
-                prepend_prompt_btn.click(
-                    fn=_transfer_prepend,
-                    inputs=[full_tags_textbox, target_prompt, strip_tags_box, strip_tags_chk],
                     outputs=[target_prompt],
                 )
                 insert_artist_btn.click(
@@ -1113,7 +1167,8 @@ class BooruTagsGachaScript(scripts.Script):
                 all_neg_prompts[idx] = f"{cur_neg}, {exc_tags}".strip(", ")
 
             caption = card.get_gallery_caption()
-            print(f"  [Auto-Gacha #{idx + 1}/{total_images}] Post #{card.post.id} ({card.tier}): {caption}")
+            print(f"  [Auto-Gacha #{idx + 1}/{total_images}] Post #{card.post.id} ({card.tier}) [{caption}]:")
+            print(f"    -> Prompt: {updated_prompt[:130]}...")
 
         p.prompt = all_prompts[0]
         p.all_prompts = all_prompts
@@ -1173,6 +1228,10 @@ class BooruTagsGachaScript(scripts.Script):
 
         p.seeds = p.all_seeds[:batch_size]
         p.subseeds = p.all_subseeds[:batch_size]
+
+    def before_process_batch(self, p, *args, **kwargs):
+        """Ensure batch-level prompts and seeds match before loras/extra networks are parsed."""
+        self.process_batch(p, *args, **kwargs)
 
     def process_batch(self, p, *args, **kwargs):
         """Ensure batch-level prompts and seeds match the current iteration."""
