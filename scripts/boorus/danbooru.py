@@ -56,18 +56,25 @@ class DanbooruClient(BooruClient):
         rating_map = {"safe": "g", "sensitive": "s", "questionable": "q", "explicit": "e"}
         norm_rating_char = rating_map.get(rating, None) if (rating and rating != "any") else None
 
-        # Danbooru limits queries to MAX 2 tags for free/member users (even with API key).
-        # We must use random:N to get a batch quickly, plus ONE include tag or rating.
-        # We filter the rest locally to guarantee we don't hit the 422 Unprocessable Entity error.
-        
-        fetch_limit = min(max(count * 6, 40), 100)
-        query_terms = [f"random:{fetch_limit}"]
-        if include:
-            query_terms.append(include[0])
+        # Danbooru limits queries to MAX 2 tags for free/member users (HTTP 422 on >2 tags).
+        # We strategically choose the 2 most restrictive tags to maximize valid candidate yield:
+        fetch_limit = min(max(count * 20, 60), 200)
+        query_terms: list[str] = []
+
+        if include and norm_rating_char:
+            # Query the primary include tag AND rating directly on Danbooru
+            query_terms = [include[0], f"rating:{norm_rating_char}"]
+        elif include:
+            if len(include) > 1:
+                query_terms = [include[0], include[1]]
+            else:
+                query_terms = [f"random:{fetch_limit}", include[0]]
         elif norm_rating_char:
-            query_terms.append(f"rating:{norm_rating_char}")
+            query_terms = [f"random:{fetch_limit}", f"rating:{norm_rating_char}"]
         elif min_score > 0:
-            query_terms.append(f"score:>={min_score}")
+            query_terms = [f"random:{fetch_limit}", f"score:>={min_score}"]
+        else:
+            query_terms = [f"random:{fetch_limit}"]
 
         params = {
             "tags": " ".join(query_terms),
@@ -87,56 +94,59 @@ class DanbooruClient(BooruClient):
                 if isinstance(single_data, dict) and single_data.get("id"):
                     return [self._to_post(single_data)]
 
-            # Fallback 2: query without random:N using the first tag directly
+            # Fallback 2: query without rating/random using the first tag directly
             if include:
                 data = await self._request("/posts.json", {"tags": include[0], "limit": fetch_limit})
 
         if not isinstance(data, list) or not data:
             return []
 
-        # Filter candidates client-side
-        candidates = []
-        for raw in data:
+        def _is_valid(raw: dict[str, Any], req_score: int) -> bool:
             if not isinstance(raw, dict) or not raw.get("id"):
-                continue
+                return False
 
-            # Check rating
+            # Check rating strictly
             if norm_rating_char:
                 post_r = raw.get("rating", "g")
                 if norm_rating_char == "g" and post_r not in ("g", "s"):
-                    continue
+                    return False
                 elif norm_rating_char in ("q", "e", "s") and post_r != norm_rating_char:
-                    continue
+                    return False
 
             # Check min score
-            try:
-                post_score = int(raw.get("score", 0) or 0)
-            except (TypeError, ValueError):
-                post_score = 0
-            if min_score > 0 and post_score < min_score:
-                continue
+            if req_score > 0:
+                try:
+                    post_score = int(raw.get("score", 0) or 0)
+                except (TypeError, ValueError):
+                    post_score = 0
+                if post_score < req_score:
+                    return False
 
             # Check remaining include tags
             post_all_tags = set((raw.get("tag_string") or "").split())
             if len(include) > 1:
                 if not all(any(req == normalize_tag(t) for t in post_all_tags) for req in include[1:]):
-                    continue
+                    return False
 
             # Check exclude tags
             if excluded and any(normalize_tag(t) in excluded for t in post_all_tags):
-                continue
+                return False
 
-            candidates.append(raw)
+            return True
 
-        # If strict filtering had fewer than needed, relax score slightly
-        if len(candidates) < count:
-            for raw in data:
-                if raw in candidates or not isinstance(raw, dict) or not raw.get("id"):
-                    continue
-                post_all_tags = set((raw.get("tag_string") or "").split())
-                if excluded and any(normalize_tag(t) in excluded for t in post_all_tags):
-                    continue
-                candidates.append(raw)
+        candidates = [raw for raw in data if _is_valid(raw, min_score)]
+
+        # If strict min_score filtering had fewer candidates than needed, relax min_score progressively
+        # while STILL strictly enforcing rating, include tags, and exclude tags!
+        if len(candidates) < count and min_score > 0:
+            for step_score in (max(0, min_score // 2), 0):
+                for raw in data:
+                    if raw not in candidates and _is_valid(raw, step_score):
+                        candidates.append(raw)
+                    if len(candidates) >= count * 2:
+                        break
+                if len(candidates) >= count:
+                    break
 
         if not candidates:
             return []

@@ -1105,7 +1105,25 @@ class BooruTagsGachaScript(scripts.Script):
         )
 
         if not results:
-            print(f"[Booru Tags Gacha] No posts matched criteria for Auto-Gacha ({site_key})")
+            print(f"[Booru Tags Gacha] No posts matched criteria for Auto-Gacha ({site_key}) - attempting fallback")
+            emergency_results = _run_async(
+                pull_gacha(
+                    site=site_key,
+                    count=cards_to_pull,
+                    include="",
+                    exclude=exc_tags,
+                    rating=rating_val,
+                    min_score=0,
+                    config=fmt_config,
+                    fetch_images=False,
+                )
+            )
+            if emergency_results:
+                results = emergency_results
+                print(f"[Booru Tags Gacha] Emergency fallback succeeded with {len(results)} post(s)")
+
+        if not results:
+            print(f"[Booru Tags Gacha] No posts found. Stripping raw placeholders cleanly.")
             import random
             base_seed = getattr(p, "seed", -1)
             try:
@@ -1117,6 +1135,23 @@ class BooruTagsGachaScript(scripts.Script):
             else:
                 p.all_seeds = [base_seed_int + i for i in range(total_images)]
             p.seeds = p.all_seeds[:batch_size]
+
+            # Strip placeholder tokens cleanly so they don't break prompt embedding
+            clean_prompts = list(getattr(p, "all_prompts", []) or [p.prompt or ""])
+            if len(clean_prompts) < total_images:
+                clean_prompts = [clean_prompts[0] if clean_prompts else (p.prompt or "")] * total_images
+            tokens_clean = [
+                re.compile(re.escape(t), re.IGNORECASE)
+                for t in ("[gacha-wa]", "[gacha-oa]", "[gacha-oc]", "[gacha-gen]", "[gacha-all]", "[gacha]")
+            ]
+            for i in range(len(clean_prompts)):
+                pr = clean_prompts[i]
+                for tok_pat in tokens_clean:
+                    pr = tok_pat.sub("", pr)
+                clean_prompts[i] = re.sub(r',\s*,+', ', ', pr).strip(', ')
+            p.prompt = clean_prompts[0]
+            p.all_prompts = clean_prompts
+            p.prompts = clean_prompts[:batch_size]
             return
 
         all_prompts = list(getattr(p, "all_prompts", []))
@@ -1136,9 +1171,9 @@ class BooruTagsGachaScript(scripts.Script):
             card = results[idx % len(results)]
             cur_prompt = all_prompts[idx]
 
-            # 1. Replace placeholders if present
+            # 1. Replace placeholders if present (use card.config to preserve per-slot diversification)
             updated_prompt, was_replaced = TagFormatter.replace_placeholders(
-                cur_prompt, card.post, fmt_config
+                cur_prompt, card.post, card.config
             )
 
             # 2. If no placeholders and Auto-Gacha is enabled
@@ -1169,6 +1204,23 @@ class BooruTagsGachaScript(scripts.Script):
             caption = card.get_gallery_caption()
             print(f"  [Auto-Gacha #{idx + 1}/{total_images}] Post #{card.post.id} ({card.tier}) [{caption}]:")
             print(f"    -> Prompt: {updated_prompt[:130]}...")
+
+        # Guarantee unique batch prompts when 'Unique prompt per image' is selected
+        if auto_batch_mode_dropdown == "Unique prompt per image" and total_images > 1:
+            seen_prompts: set[str] = set()
+            for idx in range(total_images):
+                pr = all_prompts[idx]
+                if pr in seen_prompts:
+                    parts = [pt.strip() for pt in pr.split(",") if pt.strip()]
+                    if len(parts) > 4:
+                        import random
+                        head = parts[:3]
+                        tail = parts[3:]
+                        random.Random(idx * 31337 + len(tail)).shuffle(tail)
+                        all_prompts[idx] = ", ".join(head + tail)
+                    else:
+                        all_prompts[idx] = f"{pr}, angle variation {idx + 1}"
+                seen_prompts.add(all_prompts[idx])
 
         p.prompt = all_prompts[0]
         p.all_prompts = all_prompts

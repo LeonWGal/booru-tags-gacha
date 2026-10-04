@@ -375,15 +375,46 @@ async def pull_gacha(
             if not img and post.file_url and post.file_url != post.preview_url:
                 img = await fetch_image(post.file_url, client.image_headers(post.file_url))
 
-        # If this post was duplicated across batch slots, randomize its tag sample so prompts remain distinct
-        card_cfg = fmt_config
-        if idx >= len(unique_candidates):
-            card_cfg = copy.copy(fmt_config)
-            card_cfg.random_tag_sample = True
-            if card_cfg.max_general_tags == 0 and len(post.tags_general) > 5:
-                card_cfg.max_general_tags = max(int(len(post.tags_general) * 0.85), 3)
+        # If this post was duplicated across batch slots, diversify tags so batch prompts are distinct
+        card_cfg = copy.copy(fmt_config)
+        card_post = post
 
-        return GachaPullResult(post, active_site, img, card_cfg)
+        # Check if this slot reuses a post from earlier in the batch
+        is_duplicate_slot = idx >= len(unique_candidates) or any(
+            str(selected_posts[prev_i].id) == str(post.id) for prev_i in range(idx)
+        )
+
+        if is_duplicate_slot:
+            card_cfg.random_tag_sample = True
+            all_gen = list(post.tags_general)
+            if len(all_gen) > 2:
+                import random
+                post_seed = 0
+                try:
+                    post_seed = int(str(post.id).strip() or 0)
+                except ValueError:
+                    post_seed = 0
+                slot_rng = random.Random(idx * 7919 + post_seed)
+                shuffled_gen = list(all_gen)
+                slot_rng.shuffle(shuffled_gen)
+
+                # Keep a varying, shuffled subset of general tags
+                if card_cfg.max_general_tags > 0:
+                    subset_count = min(card_cfg.max_general_tags, len(shuffled_gen))
+                else:
+                    subset_count = max(int(len(shuffled_gen) * 0.85), 3)
+
+                card_post = copy.copy(post)
+                card_post.tags_general = shuffled_gen[:subset_count]
+                # Re-synthesize all_tags for the cloned post
+                new_all = []
+                for group in (card_post.tags_artist, card_post.tags_character, card_post.tags_copyright, card_post.tags_general, card_post.tags_meta):
+                    for t in group:
+                        if t not in new_all:
+                            new_all.append(t)
+                card_post._all_tags = new_all
+
+        return GachaPullResult(card_post, active_site, img, card_cfg)
 
     card_tasks = [_build_card(i, p) for i, p in enumerate(selected_posts)]
     results = await asyncio.gather(*card_tasks)
