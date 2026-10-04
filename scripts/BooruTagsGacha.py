@@ -185,20 +185,21 @@ class BooruTagsGachaScript(scripts.Script):
                 copyright_tags_box = gr.Textbox(label="Series / Copyright", show_copy_button=True, scale=1)
 
             # Quick Prompt Actions
-            with gr.Group():
-                with gr.Row():
-                    set_gacha_btn = gr.Button("🎲 Set [gacha] (Full Roll per Image)", variant="primary", elem_classes=["gacha-action-btn", "gacha-gacha-btn"])
-                    insert_gacha_btn = gr.Button("➕ Add [gacha]", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
-                    replace_prompt_btn = gr.Button("Replace with Card Tags", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
-                    append_prompt_btn = gr.Button("Append Card Tags", elem_classes=["gacha-action-btn", "gacha-insert-btn"])
-                    add_negative_btn = gr.Button("To Negative", elem_classes=["gacha-action-btn", "gacha-insert-btn", "gacha-neg-btn"])
+            with gr.Group(elem_classes=["gacha-actions-panel"]):
+                with gr.Row(elem_classes=["gacha-placeholders-row"]):
+                    set_gacha_btn = gr.Button("🎲 Set [gacha]", variant="primary", scale=2, elem_classes=["gacha-action-btn", "gacha-gacha-btn", "gacha-placeholder-btn"])
+                    insert_gacha_btn = gr.Button("➕ [gacha]", scale=1, elem_classes=["gacha-action-btn", "gacha-placeholder-btn", "gacha-insert-btn"])
+                    insert_wa_btn = gr.Button("🎭 [gacha-wa] (No Artist)", scale=2, elem_classes=["gacha-action-btn", "gacha-placeholder-btn", "gacha-wa-btn"])
+                    insert_oa_btn = gr.Button("🎨 [gacha-oa] (Artist)", scale=1, elem_classes=["gacha-action-btn", "gacha-placeholder-btn", "gacha-oa-btn"])
+                    insert_oc_btn = gr.Button("👤 [gacha-oc] (Char)", scale=1, elem_classes=["gacha-action-btn", "gacha-placeholder-btn", "gacha-oc-btn"])
 
-                with gr.Row():
-                    insert_oa_btn = gr.Button("🎨 [gacha-oa] (Artist Only)", size="sm", elem_classes=["gacha-sub-btn"])
-                    insert_oc_btn = gr.Button("👤 [gacha-oc] (Char Only)", size="sm", elem_classes=["gacha-sub-btn"])
-                    insert_artist_btn = gr.Button("Insert Card Artist", size="sm", elem_classes=["gacha-sub-btn"])
-                    insert_character_btn = gr.Button("Insert Card Char", size="sm", elem_classes=["gacha-sub-btn"])
-                    fav_post_btn = gr.Button("Save to Favorites", size="sm", elem_classes=["gacha-sub-btn", "gacha-fav-btn"])
+                with gr.Row(elem_classes=["gacha-card-actions-row"]):
+                    replace_prompt_btn = gr.Button("🔄 Replace Prompt", size="sm", elem_classes=["gacha-sub-btn", "gacha-card-btn"])
+                    append_prompt_btn = gr.Button("➕ Append Prompt", size="sm", elem_classes=["gacha-sub-btn", "gacha-card-btn"])
+                    insert_artist_btn = gr.Button("🎨 Card Artist", size="sm", elem_classes=["gacha-sub-btn", "gacha-card-btn"])
+                    insert_character_btn = gr.Button("👤 Card Char", size="sm", elem_classes=["gacha-sub-btn", "gacha-card-btn"])
+                    add_negative_btn = gr.Button("🚫 To Negative", size="sm", elem_classes=["gacha-sub-btn", "gacha-card-btn", "gacha-neg-btn"])
+                    fav_post_btn = gr.Button("⭐ Favorite", size="sm", elem_classes=["gacha-sub-btn", "gacha-card-btn", "gacha-fav-btn"])
 
             # History & Navigation Row
             with gr.Row():
@@ -851,6 +852,23 @@ class BooruTagsGachaScript(scripts.Script):
                 gr.Info("Appended [gacha] to prompt and enabled Auto-Gacha!")
                 return new_prompt, True
 
+            def _transfer_insert_wa(cur):
+                token = "[gacha-wa]"
+                if not cur or not cur.strip():
+                    new_prompt = token
+                elif token in cur:
+                    new_prompt = cur
+                else:
+                    new_prompt = f"{cur.strip().rstrip(',')}, {token}"
+                try:
+                    shared.opts.set("gpr_auto_gacha_enable", True)
+                    shared.opts.set("gpr_auto_gacha_mode", "Replace [gacha...] placeholders")
+                    shared.opts.save(shared.config_filename)
+                except Exception:
+                    pass
+                gr.Info("Added [gacha-wa] (Without Artist / Без автора)! Batch images will get unique tags & character, keeping your artist untouched.")
+                return new_prompt, True
+
             def _transfer_insert_oa(cur):
                 token = "[gacha-oa]"
                 if not cur or not cur.strip():
@@ -858,9 +876,10 @@ class BooruTagsGachaScript(scripts.Script):
                 elif token in cur:
                     new_prompt = cur
                 else:
-                    new_prompt = f"{token}, {cur.strip().lstrip(',')}"
+                    new_prompt = f"{cur.strip().rstrip(',')}, {token}"
                 try:
                     shared.opts.set("gpr_auto_gacha_enable", True)
+                    shared.opts.set("gpr_auto_gacha_mode", "Replace [gacha...] placeholders")
                     shared.opts.save(shared.config_filename)
                 except Exception:
                     pass
@@ -874,9 +893,10 @@ class BooruTagsGachaScript(scripts.Script):
                 elif token in cur:
                     new_prompt = cur
                 else:
-                    new_prompt = f"{token}, {cur.strip().lstrip(',')}"
+                    new_prompt = f"{cur.strip().rstrip(',')}, {token}"
                 try:
                     shared.opts.set("gpr_auto_gacha_enable", True)
+                    shared.opts.set("gpr_auto_gacha_mode", "Replace [gacha...] placeholders")
                     shared.opts.save(shared.config_filename)
                 except Exception:
                     pass
@@ -891,6 +911,11 @@ class BooruTagsGachaScript(scripts.Script):
                 )
                 insert_gacha_btn.click(
                     fn=_transfer_insert_gacha,
+                    inputs=[target_prompt],
+                    outputs=[target_prompt, auto_gacha_chk],
+                )
+                insert_wa_btn.click(
+                    fn=_transfer_insert_wa,
                     inputs=[target_prompt],
                     outputs=[target_prompt, auto_gacha_chk],
                 )

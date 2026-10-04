@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    Booru Tags Gacha - Modern Solid High-Contrast UI
    Optimized for: Stable Diffusion WebUI & Forge Neo
    Design: Clean Solid Surfaces, Zero Glassmorphism, Perfect Light/Dark Contrast
@@ -423,26 +423,88 @@
     filter: brightness(1.08) !important;
 }
 
-/* Action Buttons */
-.gacha-action-btn {
-    font-weight: 700 !important;
-    border-radius: 6px !important;
-    transition: all 0.15s ease !important;
+/* Action Buttons & Quick Actions Panel */
+.gacha-actions-panel {
+    background: var(--gf-bg-card-secondary, rgba(255, 255, 255, 0.03)) !important;
+    border: 1px solid var(--gf-border, rgba(255, 255, 255, 0.08)) !important;
+    border-radius: 8px !important;
+    padding: 8px !important;
+    margin: 6px 0 !important;
+    gap: 8px !important;
 }
 
-.gacha-action-btn:active {
+.gacha-placeholders-row,
+.gacha-card-actions-row {
+    gap: 6px !important;
+    align-items: center !important;
+}
+
+.gacha-action-btn,
+.gacha-sub-btn {
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+    padding: 6px 10px !important;
+    transition: all 0.15s ease !important;
+    cursor: pointer !important;
+    border: 1px solid var(--gf-border, rgba(255, 255, 255, 0.1)) !important;
+    background: var(--gf-bg-card-secondary, #22262e) !important;
+    color: var(--gf-text-primary, #e5e7eb) !important;
+    min-height: 32px !important;
+}
+
+.gacha-action-btn:hover,
+.gacha-sub-btn:hover {
+    border-color: var(--gf-primary, #52c41a) !important;
+    color: var(--gf-primary, #52c41a) !important;
+    background: var(--gf-bg-card, #2b303c) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+    transform: translateY(-1px) !important;
+}
+
+.gacha-action-btn:active,
+.gacha-sub-btn:active {
     transform: scale(0.98) !important;
 }
 
+/* Primary Set [gacha] Button */
 .gacha-gacha-btn {
-    background: #059669 !important; /* Vivid Emerald */
-    color: #ffffff !important;
-    border: 1px solid #047857 !important;
+    background: var(--gf-primary, #52c41a) !important;
+    color: #121214 !important;
+    border: 1px solid var(--gf-primary, #52c41a) !important;
+    font-weight: 700 !important;
+    box-shadow: 0 1px 4px rgba(82, 196, 26, 0.25) !important;
 }
 
 .gacha-gacha-btn:hover {
-    background: #047857 !important;
-    filter: brightness(1.08) !important;
+    background: var(--gf-primary-hover, #73d13d) !important;
+    color: #121214 !important;
+    border-color: var(--gf-primary-hover, #73d13d) !important;
+    box-shadow: 0 2px 8px rgba(82, 196, 26, 0.45) !important;
+}
+
+/* [gacha-wa] Without Artist Button */
+.gacha-wa-btn {
+    border-color: rgba(82, 196, 26, 0.5) !important;
+    background: rgba(82, 196, 26, 0.08) !important;
+    color: var(--gf-primary, #52c41a) !important;
+    font-weight: 700 !important;
+}
+
+.gacha-wa-btn:hover {
+    background: rgba(82, 196, 26, 0.18) !important;
+    border-color: var(--gf-primary, #52c41a) !important;
+    color: var(--gf-primary, #52c41a) !important;
+    box-shadow: 0 2px 6px rgba(82, 196, 26, 0.25) !important;
+}
+
+.gacha-neg-btn {
+    color: #ef4444 !important;
+}
+
+.gacha-neg-btn:hover {
+    border-color: #ef4444 !important;
+    color: #dc2626 !important;
 }
 
 .gacha-autogacha-controls-row {
@@ -462,7 +524,12 @@
 }
 
 .gacha-fav-btn {
-    color: #d97706 !important;
+    color: #eab308 !important;
+}
+
+.gacha-fav-btn:hover {
+    border-color: #eab308 !important;
+    color: #ca8a04 !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -554,16 +621,16 @@
 #booru_gacha_gallery .gallery-item:hover,
 #booru_gacha_gallery button:hover {
     transform: translateY(-2px) !important;
-    border-color: #6366f1 !important;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25) !important;
+    border-color: var(--gf-primary, #52c41a) !important;
+    box-shadow: 0 4px 12px rgba(82, 196, 26, 0.25) !important;
     z-index: 2 !important;
 }
 
 #booru_gacha_gallery .selected,
 #booru_gacha_gallery button.selected,
 #booru_gacha_gallery .thumbnail-item.selected {
-    border: 2.5px solid #6366f1 !important;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35) !important;
+    border: 2.5px solid var(--gf-primary, #52c41a) !important;
+    box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.35) !important;
     z-index: 3 !important;
 }
 
@@ -724,25 +791,30 @@
     background: var(--gf-primary) !important;
     color: #121214 !important;
     border: 1px solid var(--gf-primary) !important;
+    font-weight: 700 !important;
 }
 .booru-gacha-container .gacha-sub-btn,
-.booru-gacha-container .gacha-insert-btn {
-    background: transparent !important;
-    border: 1px solid transparent !important;
-    color: var(--gf-text-secondary) !important;
-    font-size: 11.5px !important;
-    height: 28px !important;
-}
-.booru-gacha-container .gacha-sub-btn:hover,
-.booru-gacha-container .gacha-insert-btn:hover {
+.booru-gacha-container .gacha-insert-btn,
+.booru-gacha-container .gacha-card-btn,
+.booru-gacha-container .gacha-placeholder-btn {
     background: var(--gf-bg-card-secondary) !important;
     border: 1px solid var(--gf-border) !important;
     color: var(--gf-text-primary) !important;
+    border-radius: 6px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    height: 32px !important;
+    transition: all 0.15s ease !important;
 }
-.booru-gacha-container .gacha-gacha-btn {
-    background: var(--gf-primary) !important;
-    color: #121214 !important;
-    border: 1px solid var(--gf-primary) !important;
+.booru-gacha-container .gacha-sub-btn:hover,
+.booru-gacha-container .gacha-insert-btn:hover,
+.booru-gacha-container .gacha-card-btn:hover,
+.booru-gacha-container .gacha-placeholder-btn:hover {
+    background: var(--gf-bg-card) !important;
+    border-color: var(--gf-primary) !important;
+    color: var(--gf-primary) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+    transform: translateY(-1px) !important;
 }
 .booru-gacha-container .gacha-tag-chips-container {
     background: var(--gf-bg-card) !important;
